@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>GOchat 2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#1C2733">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="GOchat">
+    <link href="manifest.json" rel="manifest">
+    <link href="style.css" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <ul class="head_inner">
+            <li class="head_item">
+                <i class="material-icons">chat</i>
+            </li>
+            <li class="head_title">
+                <h1>GOchat</h1>
+                <div id="status"></div>
+            </li>
+        </ul>
+    </header>
+
+    <section id="chat"></section>
+
+    <div class="message_form">
+        <input type="file" id="imageInput" accept="image/*" class="none">
+        <input type="text" id="nameInput" placeholder="Name">
+        <input type="text" id="textInput" placeholder="Enter a message...">
+        <span id="send_message" class="write">
+            <i class="material-icons">send</i>
+        </span>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="chat.js"></script>
+</body>
+</html>

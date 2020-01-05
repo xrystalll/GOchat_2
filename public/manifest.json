@@ -1,0 +1,26 @@
+{
+	"name": "GOchat",
+	"short_name": "GOchat",
+	"icons": [{
+		"src": "/images/icon_96.png",
+		"type": "image/png",
+		"sizes": "96x96"
+	}, {
+		"src": "/images/icon_144.png",
+		"type": "image/png",
+		"sizes": "144x144"
+	}, {
+		"src": "/images/icon_192.png",
+		"type": "image/png",
+		"sizes": "192x192"
+	}, {
+		"src": "/images/icon_512.png",
+		"type": "image/png",
+		"sizes": "512x512"
+	}],
+	"start_url": "/",
+	"display": "standalone",
+	"orientation": "portrait",
+	"background_color": "#151d26",
+	"theme_color": "#1c2733"
+}
