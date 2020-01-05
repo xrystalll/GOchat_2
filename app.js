@@ -10,6 +10,7 @@ const { ObjectID } = require('mongodb');
 const io = require('socket.io').listen(server);
 
 const path = require('path');
+const fs = require('fs');
 
 const multer = require('multer');
 const storage = multer.diskStorage({
@@ -33,6 +34,7 @@ const checkFileType = (file, cb) => {
         cb('Error: It\'s not image');
     }
 };
+const sharp = require('sharp');
 
 const typings = [];
 
@@ -48,7 +50,14 @@ app.get('/', (req, res) => {
 app.post('/upload', (req, res) => {
     upload(req, res, (err) => {
         req.file ? (
-            res.json({ image: req.file.filename })
+            sharp(req.file.path)
+                .resize(300)
+                .toBuffer()
+                .then((data) => {
+                    fs.writeFileSync(req.file.path, data),
+                    res.json({ image: req.file.filename })
+                })
+                .catch((err) => console.error(err))
         ) : (
             res.json({ error: err })
         )
