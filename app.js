@@ -121,7 +121,7 @@ MongoClient.connect(conf.mongoremote, {useUnifiedTopology: true})
         socket.on('stop_typing', (data) => {
             const index = typings.indexOf(data.username);
             index > -1 && typings.splice(index, 1),
-            socket.emit('stop_typing')
+            io.emit('stop_typing')
         }),
 
         socket.on('delete', (data) => {
