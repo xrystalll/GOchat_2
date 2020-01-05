@@ -5,7 +5,7 @@
     --accent-color: #5d80a6;
     --main-bg: #151D26;
     --main-text-color: #EFEFF1;
-    --main-control-color: #3A3A3D;
+    --main-control-color: #3a3a3d;
     --main-control-tint: #ADADB8;
     --main-info-color: #b6bfb7;
     --main-success-color: #4CAF50;
@@ -16,6 +16,7 @@
     --selection-color: #2d2d2d;
     --default-white: #FFF;
     --default-transparent: transparent;
+    --default-transparent-02: rgba(0, 0, 0, .2);
     --default-transparent-04: rgba(0, 0, 0, .4);
 }
 * {
@@ -140,6 +141,16 @@ header {
     font-weight: 400;
 }
 
+#status {
+    font-size: 13px;
+    font-style: italic;
+    color: var(--secondary-color);
+    display: none;
+}
+#status.typing {
+    display: block;
+}
+
 #chat {
     display: flex;
     flex-direction: column;
@@ -208,16 +219,19 @@ header {
     cursor: pointer;
 }
 
-#status {
-    font-size: 13px;
-    font-style: italic;
-    color: var(--secondary-color);
-    display: none;
+.date_group {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    margin: 4px 8px;
+    cursor: default;
 }
-#status.typing {
-    display: block;
+.date_group span {
+    background: var(--default-transparent-02);
+    padding: 4px 12px;
+    border-radius: 50px;
 }
-
 .message_item {
     display: flex;
     margin: 4px 8px;

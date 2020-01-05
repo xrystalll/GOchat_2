@@ -19,7 +19,18 @@ $(document).ready(() => {
         }, 3800)
     };
 
+    const getDate = (timestamp) => {
+        const t = new Date(timestamp);
+        return `${t.getDate()}.${t.getMonth()+1}.${t.getFullYear()}`
+    };
+
     const timeFormat = (timestamp) => {
+        const t = new Date(timestamp);
+        const min = t.getMinutes() < 10 ? `0${t.getMinutes()}` : t.getMinutes();
+        return `${t.getHours()}:${min}`
+    };
+
+    const dateFormat = (timestamp) => {
         const d = new Date();
         const t = new Date(timestamp);
 
@@ -32,26 +43,25 @@ $(document).ready(() => {
         const year = t.getFullYear();
         const month = months[t.getMonth()];
         const date = t.getDate();
-        const hour = t.getHours();
-        const min = t.getMinutes() < 10 ? `0${t.getMinutes()}` : t.getMinutes();
 
         let thisYear;
         year !== curYear ? thisYear = ` ${year}` : thisYear = '';
 
         if (`${date}.${month}.${year}` === `${curDate}.${curMonth}.${curYear}`) {
-            return `today at ${hour}:${min}`
+            return `today`
         } else if (`${date}.${month}.${year}` === `${curDate - 1}.${curMonth}.${curYear}`) {
-            return `yesterday at ${hour}:${min}`
+            return `yesterday`
         } else {
-            return `${date} ${month}${thisYear} at ${hour}:${min}`
+            return `${date} ${month}${thisYear}`
         }
     };
 
     const checkImg = (url) => url.toLowerCase().match(/\.(jpeg|jpg|png|webp|gif|bmp)$/) != null;
 
     const template = {
-        message: (id, user, photo = '', content, time, type = '', my = false) => {
+        message: (id, user, photo = '', content, time, type = '', my = false, group = false) => {
             return `
+                ${group ? `<div class="date_group"><span>${dateFormat(time)}</span></div>` : ''}
                 <div class="message_item${my ? ' my' : ''}" data-id="${id}">
                     <div class="message_block_left">
                         ${photo ? `
@@ -93,8 +103,7 @@ $(document).ready(() => {
     };
 
     // Handler: Write new message
-    const write = () => {
-        const text = message.val().replace(/(<([^>]+)>)/ig, '').trim();
+    const write = (text) => {
         let user = localStorage.getItem('username') ? localStorage.getItem('username') : username.val().trim();
         let photo = localStorage.getItem('userphoto') ? localStorage.getItem('userphoto') : null;
 
@@ -180,17 +189,25 @@ $(document).ready(() => {
 
     // UI: Send message via button
     send_message.on('click', () => {
-        if (message.val().trim().length > 1 && message.val().trim().length < 1500) {
-            const value = message.val().trim().split(/[\s,]+/);
-            value[0] === '/clear' ? clear(value[1]) : write()
+        let text = message.val().replace(/(<([^>]+)>)/ig, '').trim();
+        if (text.length > 1) {
+            text.length > 1500 && (
+                text = text.substr(0, 1500)
+            );
+            const value = text.split(/[\s,]+/);
+            value[0] === '/clear' ? clear(value[1]) : write(text)
         } else warning('Enter message text', 'error')
     }),
 
     // UI: Send message via ENTER key
     $(document).on('keyup', '#nameInput, #textInput', (e) => {
-        if (message.val().trim().length > 1 && message.val().trim().length < 1500 && e.which === 13) {
-            const value = e.target.value.trim().split(/[\s,]+/);
-            value[0] === '/clear' ? clear(value[1]) : write()
+        let text = message.val().replace(/(<([^>]+)>)/ig, '').trim();
+        if (text.length > 1 && e.which === 13) {
+            if (text.length >= 1500) {
+                text = text.substr(0, 1500)
+            };
+            const value = text.trim().split(/[\s,]+/);
+            value[0] === '/clear' ? clear(value[1]) : write(text)
         }
     }),
 
@@ -198,7 +215,7 @@ $(document).ready(() => {
     message.on('keyup', () => {
         message.val().trim().length > 1 && message_form.addClass('typed'),
         message.val().trim().length < 2 && message_form.removeClass('typed')
-    }),
+    });
 
     // UI: Output old messages from DB
     socket.on('output', (data) => {
@@ -206,9 +223,10 @@ $(document).ready(() => {
             data.length < limit && socket.emit('get_more', { offset: offset += limit }),
             $('.empty-results').remove(),
             document.querySelector('#chat').children.length === 0 && (
-                $.each(data, (i, v) => {
+                $.each(data, (i) => {
                     let my = data[i].username === localStorage.getItem('username') ? true : false;
                     let content = checkImg(data[i].message) ? 'media' : undefined;
+                    let group = false;
                     chat.prepend(
                         template.message(
                             data[i]['_id'],
@@ -217,7 +235,8 @@ $(document).ready(() => {
                             data[i].message,
                             data[i].time,
                             content,
-                            my
+                            my,
+                            group
                         )
                     )
                 })
