@@ -104,7 +104,7 @@ header {
     background: var(--secondary-bg);
     height: 56px;
     z-index: 9;
-    box-shadow: rgba(0, 0, 0, .1) 0px 2px 4px 0;
+    box-shadow: rgba(0, 0, 0, .15) 0 0 3px 1px;
     overflow: hidden;
 }
 .head_inner {

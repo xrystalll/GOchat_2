@@ -55,7 +55,7 @@ $(document).ready(() => {
     const checkImg = (url) => url.toLowerCase().match(/\.(jpeg|jpg|png|webp|gif|bmp)$/) != null;
 
     const template = {
-        message: (id, user, photo = '', content, time, type = '', my = false, first = false) => {
+        message: (id, user, photo = '', content, time, type = '', my = false) => {
             return `
                 <div class="message_item${my ? ' my' : ''}" data-id="${id}">
                     <div class="message_block_left">
