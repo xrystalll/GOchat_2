@@ -25,12 +25,6 @@ $(document).ready(() => {
     };
 
     const timeFormat = (timestamp) => {
-        const t = new Date(timestamp);
-        const min = t.getMinutes() < 10 ? `0${t.getMinutes()}` : t.getMinutes();
-        return `${t.getHours()}:${min}`
-    };
-
-    const dateFormat = (timestamp) => {
         const d = new Date();
         const t = new Date(timestamp);
 
@@ -43,25 +37,26 @@ $(document).ready(() => {
         const year = t.getFullYear();
         const month = months[t.getMonth()];
         const date = t.getDate();
+        const hour = t.getHours();
+        const min = t.getMinutes() < 10 ? `0${t.getMinutes()}` : t.getMinutes();
 
         let thisYear;
         year !== curYear ? thisYear = ` ${year}` : thisYear = '';
 
         if (`${date}.${month}.${year}` === `${curDate}.${curMonth}.${curYear}`) {
-            return `today`
+            return `today at ${hour}:${min}`
         } else if (`${date}.${month}.${year}` === `${curDate - 1}.${curMonth}.${curYear}`) {
-            return `yesterday`
+            return `yesterday at ${hour}:${min}`
         } else {
-            return `${date} ${month}${thisYear}`
+            return `${date} ${month}${thisYear} at ${hour}:${min}`
         }
     };
 
     const checkImg = (url) => url.toLowerCase().match(/\.(jpeg|jpg|png|webp|gif|bmp)$/) != null;
 
     const template = {
-        message: (id, user, photo = '', content, time, type = '', my = false, group = false) => {
+        message: (id, user, photo = '', content, time, type = '', my = false, first = false) => {
             return `
-                ${group ? `<div class="date_group"><span>${dateFormat(time)}</span></div>` : ''}
                 <div class="message_item${my ? ' my' : ''}" data-id="${id}">
                     <div class="message_block_left">
                         ${photo ? `
@@ -215,7 +210,7 @@ $(document).ready(() => {
     message.on('keyup', () => {
         message.val().trim().length > 1 && message_form.addClass('typed'),
         message.val().trim().length < 2 && message_form.removeClass('typed')
-    });
+    }),
 
     // UI: Output old messages from DB
     socket.on('output', (data) => {
@@ -226,7 +221,6 @@ $(document).ready(() => {
                 $.each(data, (i) => {
                     let my = data[i].username === localStorage.getItem('username') ? true : false;
                     let content = checkImg(data[i].message) ? 'media' : undefined;
-                    let group = false;
                     chat.prepend(
                         template.message(
                             data[i]['_id'],
@@ -235,8 +229,7 @@ $(document).ready(() => {
                             data[i].message,
                             data[i].time,
                             content,
-                            my,
-                            group
+                            my
                         )
                     )
                 })
