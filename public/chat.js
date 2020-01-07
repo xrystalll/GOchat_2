@@ -19,11 +19,6 @@ $(document).ready(() => {
         }, 3800)
     };
 
-    const getDate = (timestamp) => {
-        const t = new Date(timestamp);
-        return `${t.getDate()}.${t.getMonth()+1}.${t.getFullYear()}`
-    };
-
     const timeFormat = (timestamp) => {
         const d = new Date();
         const t = new Date(timestamp);
@@ -54,6 +49,8 @@ $(document).ready(() => {
 
     const checkImg = (url) => url.toLowerCase().match(/\.(jpeg|jpg|png|webp|gif|bmp)$/) != null;
 
+    const findLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '<a class="link" href="$1" target="_blank">$1</a>');
+
     const template = {
         message: (id, user, photo = '', content, time, type = '', my = false) => {
             return `
@@ -68,7 +65,7 @@ $(document).ready(() => {
 
                     <div class="message_block_right ${type}">
                         <div class="message_user">${user}</div>
-                        <div class="message_text">${type === 'media' ? `<img class="image" src="${content}" alt="">` : content}</div>
+                        <div class="message_text">${type === 'media' ? `<img class="image" src="${content}" alt="">` : findLink(content)}</div>
                         <div class="message_time">${timeFormat(time)}</div>
                     </div>
 
