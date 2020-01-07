@@ -51,7 +51,7 @@ app.post('/upload', (req, res) => {
     upload(req, res, (err) => {
         req.file ? (
             sharp(req.file.path)
-                .resize(300)
+                .resize(300, 300)
                 .toBuffer()
                 .then((data) => {
                     fs.writeFileSync(req.file.path, data),

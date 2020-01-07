@@ -193,7 +193,7 @@ header {
     margin-left: auto;
     align-items: center;
     justify-content: center;
-    padding: 10px;
+    padding: 8px;
     margin-right: 8px;
     cursor: pointer;
 }
@@ -204,6 +204,7 @@ header {
     color: var(--accent-color);
     font-size: 22px;
 }
+
 .user {
     display: flex;
     flex: none;
@@ -226,6 +227,7 @@ header {
     font-size: 22px;
     background: var(--default-transparent-06);
     color: var(--default-white);
+    position: absolute;
     display: flex;
     align-items: center;
     justify-content: center;
