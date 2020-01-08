@@ -26,9 +26,15 @@
     <section id="chat"></section>
 
     <div class="message_form">
-        <input type="file" id="imageInput" accept="image/*" class="none">
+        <input type="file" id="avatarInput" accept="image/*" class="none">
         <input type="text" id="nameInput" placeholder="Name">
-        <input type="text" id="textInput" placeholder="Enter a message...">
+        <div class="input_bar">
+            <input type="text" id="textInput" placeholder="Enter a message...">
+            <label for="imageInput" class="attachment">
+                <i class="material-icons">image</i>
+            </label>
+            <input type="file" id="imageInput" accept="image/*" class="none">
+        </div>
         <span id="send_message" class="write">
             <i class="material-icons">send</i>
         </span>

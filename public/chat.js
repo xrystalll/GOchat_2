@@ -49,6 +49,8 @@ $(document).ready(() => {
 
     const checkImg = (url) => url.toLowerCase().match(/\.(jpeg|jpg|png|webp|gif|bmp)$/) != null;
 
+    const checkUrl = (url) => url.match(/(https?:\/\/[^\s]+)$/) != null;
+
     const findLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '<a class="link" href="$1" target="_blank">$1</a>');
 
     const template = {
@@ -57,7 +59,7 @@ $(document).ready(() => {
                 <div class="message_item${my ? ' my' : ''}" data-id="${id}">
                     <div class="message_block_left">
                         ${photo ? `
-                            <div class="message_avatar"${photo ? ` style="background-image: url('./photos/${photo}');"` : ''}></div>
+                            <div class="message_avatar"${photo ? ` style="background-image: url('./img/users/${photo}');"` : ''}></div>
                         ` : `
                             <div class="message_avatar">${user ? user.slice(0, 1) : ''}</div>
                         `}
@@ -65,7 +67,9 @@ $(document).ready(() => {
 
                     <div class="message_block_right ${type}">
                         <div class="message_user">${user}</div>
-                        <div class="message_text">${type === 'media' ? `<img class="image" src="${content}" alt="">` : findLink(content)}</div>
+                        <div class="message_text">${type === 'media' ? `
+                            <img class="image" src="${content}" ${!checkUrl(content) ? `data-url="${content.substring(content.lastIndexOf('/') + 1)}"` : ''} alt="">
+                        ` : findLink(content)}</div>
                         <div class="message_time">${timeFormat(time)}</div>
                     </div>
 
@@ -96,20 +100,20 @@ $(document).ready(() => {
 
     // Handler: Write new message
     const write = (text) => {
-        let user = localStorage.getItem('username') ? localStorage.getItem('username') : username.val().trim();
+        let user = localStorage.getItem('username') ? localStorage.getItem('username') : username.val().replace(/(<([^>]+)>)/ig, '').trim();
         let photo = localStorage.getItem('userphoto') ? localStorage.getItem('userphoto') : null;
 
         localStorage.getItem('username') ? (
             user = localStorage.getItem('username')
         ) : (
             user.length > 3 && (
-                user = username.val().trim(),
+                user = username.val().replace(/(<([^>]+)>)/ig, '').trim(),
                 localStorage.setItem('username', user),
                 socket.emit('set_username', {
                     username: user
                 }),
                 username.remove(),
-                message_form.prepend(`<label for="imageInput" class="user">${localStorage.getItem('username').slice(0, 1)}</label>`)
+                message_form.prepend(`<label for="avatarInput" class="user">${localStorage.getItem('username').slice(0, 1)}</label>`)
             )
         );
 
@@ -135,31 +139,46 @@ $(document).ready(() => {
         password ? socket.emit('clear', { password }) : warning('Enter password', 'error')
     };
 
-    // Handler: Uploading user photo
-    const upload = (file) => {
+    // Handler: Uploading user avatar
+    const uploadAvatar = (file) => {
         const formData = new FormData;
-        formData.append('photo', file)
-        fetch('/upload', {
+        formData.append('avatar', file)
+        fetch('/upload/avatar', {
             method: 'POST',
             body: formData
-        }).then(
-            (response) => response.json()
-        ).then(
-            (data) => {
+        }).then(response => response.json()
+        ).then(data => {
                 localStorage.setItem('userphoto', data.image),
-                $('.user').empty().css('background-image', `url('./photos/${data.image}')`),
+                $('.user').empty().css('background-image', `url('./img/users/${data.image}')`),
                 socket.emit('set_userphoto', {
                     username: localStorage.getItem('username'),
                     userphoto: data.image
                 }),
                 warning('Successfully uploaded')
             }
-        ).catch((err) => console.error(err))
+        ).catch(err => console.error(err))
     };
 
-    // UI: Uploading user photo
+    // Handler: Uploading message image
+    const uploadImage = (file) => {
+        const formData = new FormData;
+        formData.append('image', file)
+        fetch('/upload/image', {
+            method: 'POST',
+            body: formData
+        }).then(response => response.json()
+        ).then(data => write(data.image)
+        ).catch(err => console.error(err))
+    };
+
+    // UI: Uploading user avatar
+    $(document).on('change', '#avatarInput', (e) => {
+        e.target.files[0].size > 0 ? uploadAvatar(e.target.files[0]) : warning('Empty file', 'error')
+    }),
+
+    // UI: Uploading message image
     $(document).on('change', '#imageInput', (e) => {
-        e.target.files[0].size > 0 ? upload(e.target.files[0]) : warning('Empty file', 'error')
+        e.target.files[0].size > 0 ? uploadImage(e.target.files[0]) : warning('Empty file', 'error')
     }),
 
     // UI: Check username in localstorage
@@ -168,7 +187,7 @@ $(document).ready(() => {
             username: localStorage.getItem('username')
         }),
         username.remove(),
-        message_form.prepend(`<label for="imageInput" class="user">${localStorage.getItem('username').slice(0, 1)}</label>`)
+        message_form.prepend(`<label for="avatarInput" class="user">${localStorage.getItem('username').slice(0, 1)}</label>`)
     ),
 
     // UI: Check photo in localstorage
@@ -176,7 +195,7 @@ $(document).ready(() => {
         socket.emit('set_userphoto', {
             image: localStorage.getItem('userphoto')
         }),
-        $('.user').empty().css('background-image', `url('./photos/${localStorage.getItem('userphoto')}')`)
+        $('.user').empty().css('background-image', `url('./img/users/${localStorage.getItem('userphoto')}')`)
     ),
 
     // UI: Send message via button
@@ -319,7 +338,8 @@ $(document).ready(() => {
     $(document).on('click', '.del', function() {
         socket.emit('delete', {
             username: $(this).parent().find('.message_user').text(),
-            id: $(this).parent().data('id')
+            id: $(this).parent().data('id'),
+            file: $(this).parent().find('.message_text img').data('url')
         })
     }),
     socket.on('delete', (data) => $(`.message_item[data-id="${data.id}"]`).remove()),
