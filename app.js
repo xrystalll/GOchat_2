@@ -12,6 +12,8 @@ const io = require('socket.io').listen(server);
 const path = require('path');
 const fs = require('fs');
 
+const { linkPreview } = require('link-preview-node');
+
 const multer = require('multer');
 const sharp = require('sharp');
 
@@ -96,6 +98,12 @@ app.get('/img/users/:file', (req, res) => {
 app.get('/img/attachments/:file', (req, res) => {
     res.type('image/png'),
     res.sendFile(__dirname + '/public/uploads/attachments/' + req.params.file)
+}),
+
+app.get('/preview', (req, res) => {
+    linkPreview(req.query.url)
+    .then(data => res.json({ data }))
+    .catch(err => res.json({ error: err }))
 }),
 
 MongoClient.connect(conf.mongoremote, {useUnifiedTopology: true})

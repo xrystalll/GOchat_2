@@ -51,7 +51,7 @@ body {
     text-decoration: underline;
 }
 .none {
-    display: none;
+    display: none !important;
 }
 .alert {
     display: none;
@@ -380,4 +380,37 @@ header {
 .del i {
     font-size: 20px;
     color: var(--accent-color);
+}
+
+.link-preview {
+    background: var(--secondary-bg);
+    margin-top: 8px;
+    padding: 10px;
+    border-radius: 18px;
+    min-width: 150px;
+    max-width: 450px;
+}
+.link-preview a {
+    color: var(--main-text-color);
+    text-decoration: none;
+}
+.link-title {
+    font-size: 15px;
+    font-weight: 500;
+}
+.link-text {
+    margin-top: 4px;
+    font-size: 14px;
+}
+.link-image {
+    max-width: 100%;
+    border-radius: 12px;
+    margin-top: 8px;
+    overflow: hidden;
+    height: 0;
+    padding-top: 56.25%;
+    background-size: cover;
+    background-position: center;
+    background-color: var(--main-bg);
+    background-repeat: no-repeat;
 }

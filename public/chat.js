@@ -49,12 +49,12 @@ $(document).ready(() => {
 
     const checkImg = (url) => url.toLowerCase().match(/\.(jpeg|jpg|png|webp|gif|bmp)$/) != null;
 
-    const checkUrl = (url) => url.match(/(https?:\/\/[^\s]+)$/) != null;
+    const checkUrl = (url) => url.match(/(https?:\/\/[^\s]+)/g) != null;
 
     const findLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '<a class="link" href="$1" target="_blank">$1</a>');
 
     const template = {
-        message: (id, user, photo = '', content, time, type = '', my = false) => {
+        message: (id, user, photo = '', content, time, type = '', my = false, preview = false) => {
             return `
                 <div class="message_item${my ? ' my' : ''}" data-id="${id}">
                     <div class="message_block_left">
@@ -65,15 +65,28 @@ $(document).ready(() => {
                         `}
                     </div>
 
-                    <div class="message_block_right ${type}">
-                        <div class="message_user">${user}</div>
-                        <div class="message_text">${type === 'media' ? `
-                            <img class="image" src="${content}" ${!checkUrl(content) ? `data-url="${content.substring(content.lastIndexOf('/') + 1)}"` : ''} alt="">
-                        ` : findLink(content)}</div>
-                        <div class="message_time">${timeFormat(time)}</div>
+                    <div class="message_content">
+                        <div class="message_block_right ${type}">
+                            <div class="message_user">${user}</div>
+                            <div class="message_text">${type === 'media' ? `
+                                <img class="image" src="${content}" ${!checkUrl(content) ? `data-url="${content.substring(content.lastIndexOf('/') + 1)}"` : ''} alt="">
+                            ` : findLink(content)}</div>
+                            <div class="message_time">${timeFormat(time)}</div>
+                        </div>
                     </div>
 
                     ${my ? '<div class="del"><i class="material-icons">delete</i></div>' : ''}
+                </div>
+            `;
+        },
+        preview: (url, title, text, image) => {
+            return `
+                <div class="link-preview">
+                    <a href="${url}" target="_blank">
+                        <div class="link-title">${title}</div>
+                        ${text ? `<div class="link-text">${text}</div>` : ''}
+                        ${text ? `<div class="link-image" style="background-image: url('${image}')"></div>` : ''}
+                    </a>
                 </div>
             `;
         },
@@ -113,6 +126,7 @@ $(document).ready(() => {
                     username: user
                 }),
                 username.remove(),
+                $('.attachment').removeClass('none'),
                 message_form.prepend(`<label for="avatarInput" class="user">${localStorage.getItem('username').slice(0, 1)}</label>`)
             )
         );
@@ -139,6 +153,24 @@ $(document).ready(() => {
         password ? socket.emit('clear', { password }) : warning('Enter password', 'error')
     };
 
+    // Handler: Fetch link preview
+    const linkPreview = (url, id) => {
+        fetch(`/preview?url=${url}`)
+            .then(response => response.json())
+            .then(response => {
+                let data = response.data;
+                $(`.message_item[data-id="${id}"] .message_content`).append(
+                    template.preview(
+                        data.link,
+                        data.title,
+                        data.description,
+                        data.image
+                    )
+                )
+            })
+            .catch(err => console.error(err))
+    };
+
     // Handler: Uploading user avatar
     const uploadAvatar = (file) => {
         const formData = new FormData;
@@ -146,17 +178,18 @@ $(document).ready(() => {
         fetch('/upload/avatar', {
             method: 'POST',
             body: formData
-        }).then(response => response.json()
-        ).then(data => {
-                localStorage.setItem('userphoto', data.image),
-                $('.user').empty().css('background-image', `url('./img/users/${data.image}')`),
-                socket.emit('set_userphoto', {
-                    username: localStorage.getItem('username'),
-                    userphoto: data.image
-                }),
-                warning('Successfully uploaded')
-            }
-        ).catch(err => console.error(err))
+        })
+        .then(response => response.json())
+        .then(data => {
+            localStorage.setItem('userphoto', data.image),
+            $('.user').empty().css('background-image', `url('./img/users/${data.image}')`),
+            socket.emit('set_userphoto', {
+                username: localStorage.getItem('username'),
+                userphoto: data.image
+            }),
+            warning('Successfully uploaded')
+        })
+        .catch(err => console.error(err))
     };
 
     // Handler: Uploading message image
@@ -166,9 +199,10 @@ $(document).ready(() => {
         fetch('/upload/image', {
             method: 'POST',
             body: formData
-        }).then(response => response.json()
-        ).then(data => write(data.image)
-        ).catch(err => console.error(err))
+        })
+        .then(response => response.json())
+        .then(data => write(data.image))
+        .catch(err => console.error(err))
     };
 
     // UI: Uploading user avatar
@@ -187,6 +221,7 @@ $(document).ready(() => {
             username: localStorage.getItem('username')
         }),
         username.remove(),
+        $('.attachment').removeClass('none'),
         message_form.prepend(`<label for="avatarInput" class="user">${localStorage.getItem('username').slice(0, 1)}</label>`)
     ),
 
@@ -237,6 +272,10 @@ $(document).ready(() => {
                 $.each(data, (i) => {
                     let my = data[i].username === localStorage.getItem('username') ? true : false;
                     let content = checkImg(data[i].message) ? 'media' : undefined;
+                    checkUrl(data[i].message) && content !== 'media' && linkPreview(
+                        data[i].message.match(/(https?:\/\/[^\s]+)/g)[0],
+                        data[i]['_id']
+                    ),
                     chat.prepend(
                         template.message(
                             data[i]['_id'],
@@ -267,6 +306,10 @@ $(document).ready(() => {
             status.removeClass('typing').text()
         ),
         $('.empty-results').remove(),
+        checkUrl(data.message) && content !== 'media' && linkPreview(
+            data.message.match(/(https?:\/\/[^\s]+)/g)[0],
+            data['_id']
+        ),
         chat.append(
             template.message(
                 data['_id'],
@@ -292,6 +335,10 @@ $(document).ready(() => {
                     let content = checkImg(data[i].message) ? 'media' : undefined;
                     one_h = $('.message_item').outerHeight(true),
                     position += one_h,
+                    checkUrl(data[i].message) && content !== 'media' && linkPreview(
+                        data[i].message.match(/(https?:\/\/[^\s]+)/g)[0],
+                        data[i]['_id']
+                    ),
                     chat.prepend(
                         template.message(
                             data[i]['_id'],
