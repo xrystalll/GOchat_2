@@ -44,6 +44,7 @@ body {
     background: var(--main-bg);
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: var(--default-transparent);
+    position: relative;
 }
 
 .link {
@@ -58,9 +59,7 @@ body {
     max-width: 228px;
     position: fixed;
     top: 56px;
-    right: 0;
-    margin: 16px;
-    color: #fff;
+    margin: 16px 8px;
     border-radius: 8px;
     padding: 8px 16px;
     z-index: 99;
@@ -84,6 +83,7 @@ body {
     margin: 0 auto;
     max-width: 210px;
     height: calc(100vh - 128px);
+    min-height: 110px;
 }
 .empty_words {
     max-width: 210px;
@@ -238,7 +238,7 @@ header {
     justify-content: center;
     width: 38px;
     height: 38px;
-    margin-left: 16px;
+    margin-left: 8px;
     background: var(--main-bg);
     color: var(--secondary-color);
     border-radius: 50%;
@@ -345,7 +345,8 @@ header {
 }
 .media .message_text {
     line-height: 0;
-    border-radius: 0 0 18px 18px;
+    margin: 0;
+    border-radius: 18px;
     overflow: hidden;
 }
 .media .message_text .image {

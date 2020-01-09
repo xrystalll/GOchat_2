@@ -102,8 +102,8 @@ app.get('/img/attachments/:file', (req, res) => {
 
 app.get('/preview', (req, res) => {
     linkPreview(req.query.url)
-    .then(data => res.json({ data }))
-    .catch(err => res.json({ error: err }))
+        .then(data => res.json({ data }))
+        .catch(error => res.json({ error }))
 }),
 
 MongoClient.connect(conf.mongoremote, {useUnifiedTopology: true})

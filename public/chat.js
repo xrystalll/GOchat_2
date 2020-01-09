@@ -7,6 +7,9 @@ $(document).ready(() => {
     const chat = $('#chat');
     const message_form = $('.message_form');
     const status = $('#status');
+    const avatarInput = $('#avatarInput');
+    const imageInput = $('#imageInput');
+    const attachment = $('.attachment');
     const limit = 10;
     let offset = 0;
     let end = false;
@@ -54,7 +57,7 @@ $(document).ready(() => {
     const findLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '<a class="link" href="$1" target="_blank">$1</a>');
 
     const template = {
-        message: (id, user, photo = '', content, time, type = '', my = false, preview = false) => {
+        message: (id, user, photo = '', content, time, type = '', my = false) => {
             return `
                 <div class="message_item${my ? ' my' : ''}" data-id="${id}">
                     <div class="message_block_left">
@@ -67,7 +70,7 @@ $(document).ready(() => {
 
                     <div class="message_content">
                         <div class="message_block_right ${type}">
-                            <div class="message_user">${user}</div>
+                            ${type !== 'media' ? `<div class="message_user">${user}</div>` : ''}
                             <div class="message_text">${type === 'media' ? `
                                 <img class="image" src="${content}" ${!checkUrl(content) ? `data-url="${content.substring(content.lastIndexOf('/') + 1)}"` : ''} alt="">
                             ` : findLink(content)}</div>
@@ -85,7 +88,7 @@ $(document).ready(() => {
                     <a href="${url}" target="_blank">
                         <div class="link-title">${title}</div>
                         ${text ? `<div class="link-text">${text}</div>` : ''}
-                        ${text ? `<div class="link-image" style="background-image: url('${image}')"></div>` : ''}
+                        ${image ? `<div class="link-image" style="background-image: url('${image}')"></div>` : ''}
                     </a>
                 </div>
             `;
@@ -126,7 +129,7 @@ $(document).ready(() => {
                     username: user
                 }),
                 username.remove(),
-                $('.attachment').removeClass('none'),
+                attachment.removeClass('none'),
                 message_form.prepend(`<label for="avatarInput" class="user">${localStorage.getItem('username').slice(0, 1)}</label>`)
             )
         );
@@ -206,12 +209,12 @@ $(document).ready(() => {
     };
 
     // UI: Uploading user avatar
-    $(document).on('change', '#avatarInput', (e) => {
+    avatarInput.on('change', (e) => {
         e.target.files[0].size > 0 ? uploadAvatar(e.target.files[0]) : warning('Empty file', 'error')
     }),
 
     // UI: Uploading message image
-    $(document).on('change', '#imageInput', (e) => {
+    imageInput.on('change', (e) => {
         e.target.files[0].size > 0 ? uploadImage(e.target.files[0]) : warning('Empty file', 'error')
     }),
 
@@ -221,7 +224,7 @@ $(document).ready(() => {
             username: localStorage.getItem('username')
         }),
         username.remove(),
-        $('.attachment').removeClass('none'),
+        attachment.removeClass('none'),
         message_form.prepend(`<label for="avatarInput" class="user">${localStorage.getItem('username').slice(0, 1)}</label>`)
     ),
 
@@ -272,10 +275,6 @@ $(document).ready(() => {
                 $.each(data, (i) => {
                     let my = data[i].username === localStorage.getItem('username') ? true : false;
                     let content = checkImg(data[i].message) ? 'media' : undefined;
-                    checkUrl(data[i].message) && content !== 'media' && linkPreview(
-                        data[i].message.match(/(https?:\/\/[^\s]+)/g)[0],
-                        data[i]['_id']
-                    ),
                     chat.prepend(
                         template.message(
                             data[i]['_id'],
@@ -286,6 +285,10 @@ $(document).ready(() => {
                             content,
                             my
                         )
+                    ),
+                    checkUrl(data[i].message) && content !== 'media' && linkPreview(
+                        data[i].message.match(/(https?:\/\/[^\s]+)/g)[0],
+                        data[i]['_id']
                     )
                 })
             ),
@@ -306,10 +309,6 @@ $(document).ready(() => {
             status.removeClass('typing').text()
         ),
         $('.empty-results').remove(),
-        checkUrl(data.message) && content !== 'media' && linkPreview(
-            data.message.match(/(https?:\/\/[^\s]+)/g)[0],
-            data['_id']
-        ),
         chat.append(
             template.message(
                 data['_id'],
@@ -320,6 +319,10 @@ $(document).ready(() => {
                 content,
                 my
             )
+        ),
+        checkUrl(data.message) && content !== 'media' && linkPreview(
+            data.message.match(/(https?:\/\/[^\s]+)/g)[0],
+            data['_id']
         )
     }),
 
@@ -330,15 +333,11 @@ $(document).ready(() => {
         data.length > 0 ? (
             $('.empty-results').remove(),
             document.querySelector('#chat').children.length !== 0 && (
-                $.each(data, (i, v) => {
+                $.each(data, (i) => {
                     let my = data[i].username === localStorage.getItem('username') ? true : false;
                     let content = checkImg(data[i].message) ? 'media' : undefined;
                     one_h = $('.message_item').outerHeight(true),
                     position += one_h,
-                    checkUrl(data[i].message) && content !== 'media' && linkPreview(
-                        data[i].message.match(/(https?:\/\/[^\s]+)/g)[0],
-                        data[i]['_id']
-                    ),
                     chat.prepend(
                         template.message(
                             data[i]['_id'],
@@ -349,6 +348,10 @@ $(document).ready(() => {
                             content,
                             my
                         )
+                    ),
+                    checkUrl(data[i].message) && content !== 'media' && linkPreview(
+                        data[i].message.match(/(https?:\/\/[^\s]+)/g)[0],
+                        data[i]['_id']
                     )
                 }),
                 window.scrollTo(0, position)
