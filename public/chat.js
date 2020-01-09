@@ -162,14 +162,16 @@ $(document).ready(() => {
             .then(response => response.json())
             .then(response => {
                 let data = response.data;
-                $(`.message_item[data-id="${id}"] .message_content`).append(
-                    template.preview(
-                        data.link,
-                        data.title,
-                        data.description,
-                        data.image
+                if (data) {
+                    $(`.message_item[data-id="${id}"] .message_content`).append(
+                        template.preview(
+                            data.link,
+                            data.title,
+                            data.description,
+                            data.image
+                        )
                     )
-                )
+                } else throw new Error('Failed to get link data')
             })
             .catch(err => console.error(err))
     };
@@ -184,13 +186,15 @@ $(document).ready(() => {
         })
         .then(response => response.json())
         .then(data => {
-            localStorage.setItem('userphoto', data.image),
-            $('.user').empty().css('background-image', `url('./img/users/${data.image}')`),
-            socket.emit('set_userphoto', {
-                username: localStorage.getItem('username'),
-                userphoto: data.image
-            }),
-            warning('Successfully uploaded')
+            !data.error ? (
+                localStorage.setItem('userphoto', data.image),
+                $('.user').empty().css('background-image', `url('./img/users/${data.image}')`),
+                socket.emit('set_userphoto', {
+                    username: localStorage.getItem('username'),
+                    userphoto: data.image
+                }),
+                warning('Successfully uploaded')
+            ) : warning('Failed to upload', 'error')
         })
         .catch(err => console.error(err))
     };
