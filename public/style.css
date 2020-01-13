@@ -313,7 +313,7 @@ header {
     min-width: 150px;
     max-width: 450px;
 }
-.message_user {
+.message_user, .message_quote_user {
     font-size: 13px;
     font-weight: 500;
     white-space: nowrap;
@@ -321,13 +321,13 @@ header {
     text-overflow: ellipsis;
     color: var(--main-control-tint);
 }
-.message_text {
+.message_text, .message_quote_text {
     font-size: 15px;
     color: var(--main-text-color);
     margin-top: 4px;
     word-break: break-word;
 }
-.message_time {
+.message_time, .message_quote_time {
     font-size: 11px;
     white-space: nowrap;
     overflow: hidden;
@@ -378,9 +378,22 @@ header {
     top: 42px;
     right: 6.5px;
 }
-.del i {
+.del i, .quote_btn i {
     font-size: 20px;
     color: var(--accent-color);
+}
+
+.message_item:hover .quote_btn {
+    display: flex !important;
+}
+.quote_btn {
+    display: none;
+    padding: 2px;
+    cursor: pointer;
+    height: 24px;
+    position: absolute;
+    top: 42px;
+    left: 6.5px;
 }
 
 .link-preview {
@@ -414,4 +427,56 @@ header {
     background-position: center;
     background-color: var(--main-bg);
     background-repeat: no-repeat;
+}
+
+.quote {
+    border-left: 3px solid var(--accent-color);
+    padding-left: 8px;
+    margin-top: 4px;
+}
+.quote .message_text {
+    margin: 0;
+}
+.quote .message_text.media {
+    margin: 0;
+    line-height: 0;
+}
+
+.quote_form {
+    max-width: 666px;
+    position: fixed;
+    bottom: 56px;
+    width: 100%;
+    background: var(--secondary-bg);
+    display: none;
+    align-items: center;
+    height: 48px;
+    box-shadow: rgba(0, 0, 0, .15) 0 0 3px 1px;
+    z-index: 9;
+}
+.quote_form.active {
+    display: flex;
+}
+.cancel_quote {
+    padding: 9px;
+    line-height: 0;
+    cursor: pointer;
+    margin: 0 8px;
+}
+.cancel_quote i {
+    font-size: 20px;
+}
+.quote_main .quote {
+    margin: 0;
+}
+.quote .message_text img {
+    max-width: 100%;
+    height: 38px;
+    border-radius: 4px;
+}
+.message_quote_text img {
+    max-width: 100%;
+    cursor: pointer;
+    max-height: 180px;
+    border-radius: 8px;
 }

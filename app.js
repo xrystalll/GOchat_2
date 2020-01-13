@@ -142,7 +142,10 @@ MongoClient.connect(conf.mongoremote, {useUnifiedTopology: true})
                 message: data.message.replace(/(<([^>]+)>)/ig, ''),
                 username: data.username,
                 userphoto: data.userphoto,
-                time: data.time
+                time: data.time,
+                quote: {
+                    message: data.quote
+                }
             };
             db.collection('messages').insertOne(msg).catch(err => console.error('Message not added: ', err)),
             io.sockets.emit('new_message', msg)

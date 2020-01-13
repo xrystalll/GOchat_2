@@ -10,6 +10,8 @@ $(document).ready(() => {
     const avatarInput = $('#avatarInput');
     const imageInput = $('#imageInput');
     const attachment = $('.attachment');
+    const quote_form = $('.quote_form');
+    const cancel_quote = $('.cancel_quote');
     const limit = 10;
     let offset = 0;
     let end = false;
@@ -57,9 +59,9 @@ $(document).ready(() => {
     const findLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '<a class="link" href="$1" target="_blank">$1</a>');
 
     const template = {
-        message: (id, user, photo = '', content, time, type = '', my = false) => {
+        message: (id, user, photo = '', content, time, type = '', my = false, ...quote) => {
             return `
-                <div class="message_item${my ? ' my' : ''}" data-id="${id}">
+                <div class="message_item${my ? ' my' : ''}" data-id="${id}" data-user="${user}">
                     <div class="message_block_left">
                         ${photo ? `
                             <div class="message_avatar"${photo ? ` style="background-image: url('./img/users/${photo}');"` : ''}></div>
@@ -71,14 +73,22 @@ $(document).ready(() => {
                     <div class="message_content">
                         <div class="message_block_right ${type}">
                             ${type !== 'media' ? `<div class="message_user">${user}</div>` : ''}
+                            ${quote[1] ? `
+                                <div class="quote">
+                                    <div class="message_quote_user">${quote[0]}</div>
+                                    <div class="message_quote_text">${checkImg(quote[1]) ? `
+                                        <img src="${quote[1]}" class="image" alt="">
+                                    ` : quote[1]}</div>
+                                </div>
+                            ` : ''}
                             <div class="message_text">${type === 'media' ? `
-                                <img class="image" src="${content}" ${!checkUrl(content) ? `data-url="${content.substring(content.lastIndexOf('/') + 1)}"` : ''} alt="">
+                                <img src="${content}" class="image" ${!checkUrl(content) ? `data-url="${content.substring(content.lastIndexOf('/') + 1)}"` : ''} alt="">
                             ` : findLink(content)}</div>
-                            <div class="message_time">${timeFormat(time)}</div>
+                            <div class="message_time" data-time="${time}">${timeFormat(time)}</div>
                         </div>
                     </div>
 
-                    ${my ? '<div class="del"><i class="material-icons">delete</i></div>' : ''}
+                    ${my ? '<div class="del"><i class="material-icons">delete</i></div>' : '<div class="quote_btn"><i class="material-icons">reply</i></div>'}
                 </div>
             `;
         },
@@ -115,7 +125,7 @@ $(document).ready(() => {
     };
 
     // Handler: Write new message
-    const write = (text) => {
+    const write = (text, ...quote) => {
         let user = localStorage.getItem('username') ? localStorage.getItem('username') : username.val().replace(/(<([^>]+)>)/ig, '').trim();
         let photo = localStorage.getItem('userphoto') ? localStorage.getItem('userphoto') : null;
 
@@ -138,12 +148,27 @@ $(document).ready(() => {
             message.val(''),
             message_form.removeClass('typed'),
             socket.emit('stop_typing', { username: localStorage.getItem('username') }),
-            socket.emit('new_message', {
-                message: text,
-                username: user,
-                userphoto: photo,
-                time: Date.now()
-            })
+            !quote[0] ? (
+                socket.emit('new_message', {
+                    message: text,
+                    username: user,
+                    userphoto: photo,
+                    time: Date.now()
+                })
+            ) : (
+                socket.emit('new_message', {
+                    message: text,
+                    username: user,
+                    userphoto: photo,
+                    time: Date.now(),
+                    quote: {
+                        text: quote[2],
+                        username: quote[1],
+                        time: quote[3],
+                    }
+                })
+            ),
+            cancelQuote()
         )
         : warning('Enter message text', 'error')
         : warning('Enter name', 'error')
@@ -212,6 +237,14 @@ $(document).ready(() => {
         .catch(err => console.error(err))
     };
 
+    // Handler: Close quote form
+    const cancelQuote = () => {
+        quote_form.removeClass('active'),
+        $('.quote_form .message_user').text(''),
+        $('.quote_form .message_text').html(''),
+        $('.quote_form .time').html('')
+    };
+
     // UI: Uploading user avatar
     avatarInput.on('change', (e) => {
         e.target.files[0].size > 0 ? uploadAvatar(e.target.files[0]) : warning('Empty file', 'error')
@@ -248,7 +281,18 @@ $(document).ready(() => {
                 text = text.substr(0, 1500)
             );
             const value = text.split(/[\s,]+/);
-            value[0] === '/clear' ? clear(value[1]) : write(text)
+            let quoteActive = quote_form.hasClass('active');
+            let quote = false;
+            let quoteUser;
+            let quoteText;
+            let quoteTime;
+            quoteActive && (
+                quote = true,
+                quoteUser = quote_form.find('.message_user').text(),
+                quoteText = quote_form.find('.content').text(),
+                quoteTime = quote_form.find('.time').text()
+            ),
+            value[0] === '/clear' ? clear(value[1]) : write(text, quote, quoteUser, quoteText, quoteTime)
         } else warning('Enter message text', 'error')
     }),
 
@@ -260,7 +304,18 @@ $(document).ready(() => {
                 text = text.substr(0, 1500)
             };
             const value = text.trim().split(/[\s,]+/);
-            value[0] === '/clear' ? clear(value[1]) : write(text)
+            let quoteActive = quote_form.hasClass('active');
+            let quote = false;
+            let quoteUser;
+            let quoteText;
+            let quoteTime;
+            quoteActive && (
+                quote = true,
+                quoteUser = quote_form.find('.message_user').text(),
+                quoteText = quote_form.find('.content').text(),
+                quoteTime = quote_form.find('.time').text()
+            ),
+            value[0] === '/clear' ? clear(value[1]) : write(text, quote, quoteUser, quoteText, quoteTime)
         }
     }),
 
@@ -269,6 +324,23 @@ $(document).ready(() => {
         message.val().trim().length > 1 && message_form.addClass('typed'),
         message.val().trim().length < 2 && message_form.removeClass('typed')
     }),
+
+    // UI: Itit quote form
+    $(document).on('click', '.quote_btn', function() {
+        const srcRegex = /<img.*?src="(.*?)"/;
+        let media = $(this).parent().find('.message_block_right').hasClass('media');
+        const text = media ? srcRegex.exec($(this).parent().find('.message_text').html().trim())[1] : $(this).parent().find('.message_text').html().trim()
+        quote_form.addClass('active'),
+        media ? $('.quote_form .message_text').addClass('media') : $('.quote_form .message_text').removeClass('media'),
+        $('.quote_form .message_user').text($(this).parent().find('.message_user').text()),
+        $('.quote_form .message_text').html($(this).parent().find('.message_text').html().trim()),
+        $('.quote_form .content').text(text),
+        $('.quote_form .time').text($(this).parent().find('.message_time').data('time')),
+        message.focus()
+    }),
+
+    // UI: Close quote form
+    cancel_quote.on('click', cancelQuote),
 
     // UI: Output old messages from DB
     socket.on('output', (data) => {
@@ -279,6 +351,8 @@ $(document).ready(() => {
                 $.each(data, (i) => {
                     let my = data[i].username === localStorage.getItem('username') ? true : false;
                     let content = checkImg(data[i].message) ? 'media' : undefined;
+                    let quoteUser = data[i].quote.message != null ? data[i].quote.message.username : undefined;
+                    let quoteText = data[i].quote.message != null ? data[i].quote.message.text : undefined;
                     chat.prepend(
                         template.message(
                             data[i]['_id'],
@@ -287,7 +361,9 @@ $(document).ready(() => {
                             data[i].message,
                             data[i].time,
                             content,
-                            my
+                            my,
+                            quoteUser,
+                            quoteText
                         )
                     ),
                     checkUrl(data[i].message) && content !== 'media' && linkPreview(
@@ -305,6 +381,8 @@ $(document).ready(() => {
         let my = data.username === localStorage.getItem('username') ? true : false;
         let content = checkImg(data.message) ? 'media' : undefined;
         let sound = new Audio('./sounds/new_in.wav');
+        let quoteUser = data.quote.message != null ? data.quote.message.username : undefined;
+        let quoteText = data.quote.message != null ? data.quote.message.text : undefined;
         document.body.scrollHeight - (window.scrollY + window.innerHeight) < 150 && (
             $('html, body').animate({ scrollTop: $(document).height() }, 100)
         ),
@@ -321,7 +399,9 @@ $(document).ready(() => {
                 data.message,
                 data.time,
                 content,
-                my
+                my,
+                quoteUser,
+                quoteText
             )
         ),
         checkUrl(data.message) && content !== 'media' && linkPreview(
@@ -340,6 +420,8 @@ $(document).ready(() => {
                 $.each(data, (i) => {
                     let my = data[i].username === localStorage.getItem('username') ? true : false;
                     let content = checkImg(data[i].message) ? 'media' : undefined;
+                    let quoteUser = data[i].quote.message != null ? data[i].quote.message.username : undefined;
+                    let quoteText = data[i].quote.message != null ? data[i].quote.message.text : undefined;
                     one_h = $('.message_item').outerHeight(true),
                     position += one_h,
                     chat.prepend(
@@ -350,7 +432,9 @@ $(document).ready(() => {
                             data[i].message,
                             data[i].time,
                             content,
-                            my
+                            my,
+                            quoteUser,
+                            quoteText
                         )
                     ),
                     checkUrl(data[i].message) && content !== 'media' && linkPreview(
@@ -391,7 +475,7 @@ $(document).ready(() => {
 
     $(document).on('click', '.del', function() {
         socket.emit('delete', {
-            username: $(this).parent().find('.message_user').text(),
+            username: $(this).parent().data('user'),
             id: $(this).parent().data('id'),
             file: $(this).parent().find('.message_text img').data('url')
         })

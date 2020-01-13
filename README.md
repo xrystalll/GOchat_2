@@ -11,6 +11,7 @@
 - Link preview
 - Deletion self messages
 - Clearing all messages via command with password
+- Ability to quote messages
 
 ## Install
 `npm init`
