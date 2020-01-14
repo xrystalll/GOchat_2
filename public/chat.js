@@ -56,7 +56,7 @@ $(document).ready(() => {
 
     const checkUrl = (url) => url.match(/(https?:\/\/[^\s]+)/g) != null;
 
-    const findLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '<a class="link" href="$1" target="_blank">$1</a>');
+    const findLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '<a class="link" href="$1" target="_blank" title="Open in new tab">$1</a>');
 
     const template = {
         message: (id, user, photo = '', content, time, type = '', my = false, ...quote) => {
@@ -76,9 +76,15 @@ $(document).ready(() => {
                             ${quote[1] ? `
                                 <div class="quote">
                                     <div class="message_quote_user">${quote[0]}</div>
-                                    <div class="message_quote_text">${checkImg(quote[1]) ? `
-                                        <img src="${quote[1]}" class="image" alt="">
-                                    ` : quote[1]}</div>
+                                    ${checkImg(quote[1]) ? `
+                                        <div class="message_quote_text media">
+                                            <img src="${quote[1]}" class="image" alt="">
+                                        </div>
+                                    ` : `
+                                        <div class="message_quote_text">
+                                            ${quote[1]}
+                                        </div>
+                                    `}
                                 </div>
                             ` : ''}
                             <div class="message_text">${type === 'media' ? `
@@ -88,7 +94,11 @@ $(document).ready(() => {
                         </div>
                     </div>
 
-                    ${my ? '<div class="del"><i class="material-icons">delete</i></div>' : '<div class="quote_btn"><i class="material-icons">reply</i></div>'}
+                    ${my ? `
+                        <div class="del" title="Delete this message"><i class="material-icons">delete</i></div>
+                    ` : `
+                        <div class="quote_btn" title="Quote message"><i class="material-icons">reply</i></div>
+                    `}
                 </div>
             `;
         },
@@ -140,7 +150,7 @@ $(document).ready(() => {
                 }),
                 username.remove(),
                 attachment.removeClass('none'),
-                message_form.prepend(`<label for="avatarInput" class="user">${localStorage.getItem('username').slice(0, 1)}</label>`)
+                message_form.prepend(`<label for="avatarInput" class="user" title="Set your photo">${localStorage.getItem('username').slice(0, 1)}</label>`)
             )
         );
 
@@ -240,9 +250,7 @@ $(document).ready(() => {
     // Handler: Close quote form
     const cancelQuote = () => {
         quote_form.removeClass('active'),
-        $('.quote_form .message_user').text(''),
-        $('.quote_form .message_text').html(''),
-        $('.quote_form .time').html('')
+        $('.quote_form .message_user, .quote_form .message_text, .quote_form .content, .quote_form .time').empty()
     };
 
     // UI: Uploading user avatar
@@ -262,7 +270,7 @@ $(document).ready(() => {
         }),
         username.remove(),
         attachment.removeClass('none'),
-        message_form.prepend(`<label for="avatarInput" class="user">${localStorage.getItem('username').slice(0, 1)}</label>`)
+        message_form.prepend(`<label for="avatarInput" class="user" title="Set your photo">${localStorage.getItem('username').slice(0, 1)}</label>`)
     ),
 
     // UI: Check photo in localstorage
@@ -329,10 +337,18 @@ $(document).ready(() => {
     $(document).on('click', '.quote_btn', function() {
         const srcRegex = /<img.*?src="(.*?)"/;
         let media = $(this).parent().find('.message_block_right').hasClass('media');
-        const text = media ? srcRegex.exec($(this).parent().find('.message_text').html().trim())[1] : $(this).parent().find('.message_text').html().trim()
+        const text = media
+            ? srcRegex.exec($(this).parent().find('.message_text').html().trim())[1]
+            : $(this).parent().find('.message_text').html().trim()
         quote_form.addClass('active'),
-        media ? $('.quote_form .message_text').addClass('media') : $('.quote_form .message_text').removeClass('media'),
-        $('.quote_form .message_user').text($(this).parent().find('.message_user').text()),
+        media ? (
+            $('.quote_form .message_user').addClass('none'),
+            $('.quote_form .message_text').addClass('media')
+        ) : (
+            $('.quote_form .message_user').removeClass('none'),
+            $('.quote_form .message_text').removeClass('media')
+        ),
+        $('.quote_form .message_user').text($(this).parent().data('user')),
         $('.quote_form .message_text').html($(this).parent().find('.message_text').html().trim()),
         $('.quote_form .content').text(text),
         $('.quote_form .time').text($(this).parent().find('.message_time').data('time')),
@@ -470,7 +486,7 @@ $(document).ready(() => {
 
 
     message.focusout(() => socket.emit('stop_typing', { username: localStorage.getItem('username') })),
-    socket.on('stop_typing', () => status.removeClass('typing').text()),
+    socket.on('stop_typing', () => status.removeClass('typing').empty()),
 
 
     $(document).on('click', '.del', function() {
@@ -484,7 +500,7 @@ $(document).ready(() => {
 
 
     socket.on('cleared', () => {
-        status.removeClass('typing').text(),
+        status.removeClass('typing').empty(),
         chat.empty().html(template.error('No messages yet'))
     }),
 

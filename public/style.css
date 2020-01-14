@@ -347,6 +347,7 @@ header {
     line-height: 0;
     margin: 0;
     border-radius: 18px;
+    min-height: 66px;
     overflow: hidden;
 }
 .media .message_text .image {
@@ -473,6 +474,13 @@ header {
     max-width: 100%;
     height: 38px;
     border-radius: 4px;
+}
+.message_quote_text {
+    margin-top: 0;
+}
+.message_quote_text.media {
+    line-height: 0;
+    margin-top: 4px;
 }
 .message_quote_text img {
     max-width: 100%;
