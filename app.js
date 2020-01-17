@@ -1,4 +1,7 @@
-const conf = require(__dirname + '/config.json');
+const fs = require('fs');
+const path = require('path');
+
+const conf = require(path.join(__dirname, '/config.json'));
 
 const express = require('express');
 const app = express();
@@ -9,37 +12,10 @@ const { ObjectID } = require('mongodb');
 
 const io = require('socket.io').listen(server);
 
-const path = require('path');
-const fs = require('fs');
-
 const { linkPreview } = require('link-preview-node');
 
 const multer = require('multer');
 const sharp = require('sharp');
-
-const storage1 = multer.diskStorage({
-    destination: __dirname + '/public/uploads/avatars/',
-    filename: (req, file, cb) => {
-        cb(null, 'avatar_' + Date.now() + path.extname(file.originalname))
-    }
-});
-const upload1 = multer({
-    storage: storage1,
-    limits: { fileSize: 1048576 * conf.maxsize },
-    fileFilter: (req, file, cb) => checkFileType(file, cb)
-}).single('avatar');
-
-const storage2 = multer.diskStorage({
-    destination: __dirname + '/public/uploads/attachments/',
-    filename: (req, file, cb) => {
-        cb(null, 'image_' + Date.now() + path.extname(file.originalname))
-    }
-});
-const upload2 = multer({
-    storage: storage2,
-    limits: { fileSize: 1048576 * conf.maxsize * 2 },
-    fileFilter: (req, file, cb) => checkFileType(file, cb)
-}).single('image');
 
 const checkFileType = (file, cb) => {
     const filetypes = /jpeg|jpg|png|gif/;
@@ -51,6 +27,30 @@ const checkFileType = (file, cb) => {
         cb('Error: It\'s not image');
     }
 };
+
+const storage1 = multer.diskStorage({
+    destination: path.join(__dirname, 'public', 'uploads', 'avatars'),
+    filename: (req, file, cb) => {
+        cb(null, 'avatar_' + Date.now() + path.extname(file.originalname))
+    }
+});
+const upload1 = multer({
+    storage: storage1,
+    limits: { fileSize: 1048576 * conf.maxsize },
+    fileFilter: (req, file, cb) => checkFileType(file, cb)
+}).single('avatar');
+
+const storage2 = multer.diskStorage({
+    destination: path.join(__dirname, 'public', 'uploads', 'attachments'),
+    filename: (req, file, cb) => {
+        cb(null, 'image_' + Date.now() + path.extname(file.originalname))
+    }
+});
+const upload2 = multer({
+    storage: storage2,
+    limits: { fileSize: 1048576 * conf.maxsize * 2 },
+    fileFilter: (req, file, cb) => checkFileType(file, cb)
+}).single('image');
 
 const typings = [];
 
@@ -92,12 +92,12 @@ app.post('/upload/image', (req, res) => {
 
 app.get('/img/users/:file', (req, res) => {
     res.type('image/png'),
-    res.sendFile(__dirname + '/public/uploads/avatars/' + req.params.file)
+    res.sendFile(path.join(__dirname, 'public', 'uploads', 'avatars', req.params.file))
 }),
 
 app.get('/img/attachments/:file', (req, res) => {
     res.type('image/png'),
-    res.sendFile(__dirname + '/public/uploads/attachments/' + req.params.file)
+    res.sendFile(path.join(__dirname, 'public', 'uploads', 'attachments', req.params.file))
 }),
 
 app.get('/preview', (req, res) => {
@@ -106,7 +106,7 @@ app.get('/preview', (req, res) => {
         .catch(error => res.json({ error }))
 }),
 
-MongoClient.connect(conf.mongoremote, {useUnifiedTopology: true})
+MongoClient.connect(conf.mongoremote, { useUnifiedTopology: true })
 .then(client => {
     const db = client.db(conf.dbname);
     console.log(`MongoDB connected. Database: ${conf.dbname}`),
@@ -123,12 +123,6 @@ MongoClient.connect(conf.mongoremote, {useUnifiedTopology: true})
             db.collection('messages').find({}).sort({ time: -1 }).skip(data.offset).limit(10).toArray()
                 .then(data => socket.emit('more', data))
                 .catch(err => console.error('Messages not displayed: ', err))
-        }),
-
-        socket.on('get_one', (data) => {
-            db.collection('messages').find({ _id: ObjectID(data.id) }).toArray()
-                .then(data => socket.emit('out_one', data))
-                .catch(err => console.error('Message not displayed: ', err))
         }),
 
         app.get('/message', (req, res) => {
@@ -158,14 +152,14 @@ MongoClient.connect(conf.mongoremote, {useUnifiedTopology: true})
                 quote: data.quoteId
             };
             db.collection('messages').insertOne(msg)
-                .then(data => io.sockets.emit('new_message', msg))
+                .then(() => io.sockets.emit('new_message', msg))
                 .catch(err => console.error('Message not added: ', err))
         }),
 
         socket.on('typing', (data) => {
             if (typings.indexOf(data.username) === -1) {
                 typings.push(data.username)
-            };
+            }
             socket.broadcast.emit('typing', { typings })
         }),
 
@@ -178,7 +172,7 @@ MongoClient.connect(conf.mongoremote, {useUnifiedTopology: true})
         socket.on('delete', (data) => {
             data.username === socket.username ? (
                 data.file && (
-                    fs.unlinkSync(__dirname + '/public/uploads/attachments/' + data.file)
+                    fs.unlinkSync(path.join(__dirname, 'public', 'uploads', 'attachments', data.file))
                 ),
                 db.collection('messages').deleteOne({ _id: ObjectID(data.id) }, () => {
                     io.emit('delete', { id: data.id })
@@ -192,7 +186,7 @@ MongoClient.connect(conf.mongoremote, {useUnifiedTopology: true})
         }),
 
         socket.on('clear', (data) => {
-            const dir = __dirname + '/public/uploads/attachments/';
+            const dir = path.join(__dirname, 'public', 'uploads', 'attachments');
             data.password === conf.password ? (
                 db.collection('messages').deleteMany({}, () => {
                     io.emit('cleared'),

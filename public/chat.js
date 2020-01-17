@@ -136,7 +136,7 @@ $(document).ready(() => {
     // Handler: Write new message
     const write = (text, quoteId = null) => {
         let user = localStorage.getItem('username') ? localStorage.getItem('username') : username.val().replace(/(<([^>]+)>)/ig, '').trim();
-        let photo = localStorage.getItem('userphoto') ? localStorage.getItem('userphoto') : null;
+        const photo = localStorage.getItem('userphoto') ? localStorage.getItem('userphoto') : null;
 
         localStorage.getItem('username') ? (
             user = localStorage.getItem('username')
@@ -290,7 +290,7 @@ $(document).ready(() => {
                 text = text.substr(0, 1500)
             );
             const value = text.split(/[\s,]+/);
-            let quoteActive = quote_form.hasClass('active');
+            const quoteActive = quote_form.hasClass('active');
             let quoteId;
             quoteActive && (
                 quoteId = quote_form.find('.quoteId').text()
@@ -307,7 +307,7 @@ $(document).ready(() => {
                 text = text.substr(0, 1500)
             };
             const value = text.trim().split(/[\s,]+/);
-            let quoteActive = quote_form.hasClass('active');
+            const quoteActive = quote_form.hasClass('active');
             let quoteId;
             quoteActive && (
                 quoteId = quote_form.find('.quoteId').text()
@@ -324,7 +324,7 @@ $(document).ready(() => {
 
     // UI: Itit quote form
     $(document).on('click', '.quote_btn', function() {
-        let media = $(this).parent().find('.message_block_right').hasClass('media');
+        const media = $(this).parent().find('.message_block_right').hasClass('media');
         quote_form.addClass('active'),
         media ? (
             $('.quote_form .message_user').addClass('none'),
@@ -349,11 +349,11 @@ $(document).ready(() => {
             $('.empty-results').remove(),
             document.querySelector('#chat').children.length === 0 && (
                 $.each(data, (i) => {
-                    let content = checkImg(data[i].message) ? 'media' : undefined;
-                    let my = data[i].username === localStorage.getItem('username') ? true : false;
+                    const content = checkImg(data[i].message) ? 'media' : undefined;
+                    const my = data[i].username === localStorage.getItem('username');
                     chat.prepend(
                         template.message(
-                            data[i]['_id'],
+                            data[i]._id,
                             data[i].username,
                             data[i].userphoto,
                             data[i].message,
@@ -364,11 +364,11 @@ $(document).ready(() => {
                     ),
                     checkUrl(data[i].message) && content !== 'media' && linkPreview(
                         data[i].message.match(/(https?:\/\/[^\s]+)/g)[0],
-                        data[i]['_id']
+                        data[i]._id
                     ),
                     data[i].quote && quoteInit(
                         data[i].quote,
-                        data[i]['_id']
+                        data[i]._id
                     )
                 })
             ),
@@ -378,9 +378,9 @@ $(document).ready(() => {
 
     // UI: Adding new message
     socket.on('new_message', (data) => {
-        let content = checkImg(data.message) ? 'media' : undefined;
-        let my = data.username === localStorage.getItem('username') ? true : false;
-        let sound = new Audio('./sounds/new_in.wav');
+        const content = checkImg(data.message) ? 'media' : undefined;
+        const my = data.username === localStorage.getItem('username');
+        const sound = new Audio('./sounds/new_in.wav');
         document.body.scrollHeight - (window.scrollY + window.innerHeight) < 150 && (
             $('html, body').animate({ scrollTop: $(document).height() }, 100)
         ),
@@ -391,7 +391,7 @@ $(document).ready(() => {
         $('.empty-results').remove(),
         chat.append(
             template.message(
-                data['_id'],
+                data._id,
                 data.username,
                 data.userphoto,
                 data.message,
@@ -402,11 +402,11 @@ $(document).ready(() => {
         ),
         checkUrl(data.message) && content !== 'media' && linkPreview(
             data.message.match(/(https?:\/\/[^\s]+)/g)[0],
-            data['_id']
+            data._id
         ),
         data.quote && quoteInit(
             data.quote,
-            data['_id']
+            data._id
         )
     }),
 
@@ -418,13 +418,13 @@ $(document).ready(() => {
             $('.empty-results').remove(),
             document.querySelector('#chat').children.length !== 0 && (
                 $.each(data, (i) => {
-                    let content = checkImg(data[i].message) ? 'media' : undefined;
-                    let my = data[i].username === localStorage.getItem('username') ? true : false;
+                    const content = checkImg(data[i].message) ? 'media' : undefined;
+                    const my = data[i].username === localStorage.getItem('username');
                     one_h = $('.message_item').outerHeight(true),
                     position += one_h,
                     chat.prepend(
                         template.message(
-                            data[i]['_id'],
+                            data[i]._id,
                             data[i].username,
                             data[i].userphoto,
                             data[i].message,
@@ -435,11 +435,11 @@ $(document).ready(() => {
                     ),
                     checkUrl(data[i].message) && content !== 'media' && linkPreview(
                         data[i].message.match(/(https?:\/\/[^\s]+)/g)[0],
-                        data[i]['_id']
+                        data[i]._id
                     ),
                     quoteInit(
                         data[i].quote,
-                        data[i]['_id']
+                        data[i]._id
                     )
                 }),
                 window.scrollTo(0, position)
