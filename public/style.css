@@ -485,6 +485,6 @@ header {
 .message_quote_text img {
     max-width: 100%;
     cursor: pointer;
-    max-height: 180px;
+    max-height: 52px;
     border-radius: 8px;
 }

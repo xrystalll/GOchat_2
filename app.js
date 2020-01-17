@@ -20,7 +20,7 @@ const sharp = require('sharp');
 const storage1 = multer.diskStorage({
     destination: __dirname + '/public/uploads/avatars/',
     filename: (req, file, cb) => {
-        cb(null, `avatar_${Date.now() + path.extname(file.originalname)}`);
+        cb(null, 'avatar_' + Date.now() + path.extname(file.originalname))
     }
 });
 const upload1 = multer({
@@ -32,7 +32,7 @@ const upload1 = multer({
 const storage2 = multer.diskStorage({
     destination: __dirname + '/public/uploads/attachments/',
     filename: (req, file, cb) => {
-        cb(null, `image_${Date.now() + path.extname(file.originalname)}`);
+        cb(null, 'image_' + Date.now() + path.extname(file.originalname))
     }
 });
 const upload2 = multer({
@@ -125,6 +125,18 @@ MongoClient.connect(conf.mongoremote, {useUnifiedTopology: true})
                 .catch(err => console.error('Messages not displayed: ', err))
         }),
 
+        socket.on('get_one', (data) => {
+            db.collection('messages').find({ _id: ObjectID(data.id) }).toArray()
+                .then(data => socket.emit('out_one', data))
+                .catch(err => console.error('Message not displayed: ', err))
+        }),
+
+        app.get('/message', (req, res) => {
+            db.collection('messages').find({ _id: ObjectID(req.query.id) }).toArray()
+                .then(data => res.json({ data }))
+                .catch(error => res.json({ error }))
+        }),
+
         socket.on('set_username', (data) => {
             socket.username = data.username
         }),
@@ -143,12 +155,11 @@ MongoClient.connect(conf.mongoremote, {useUnifiedTopology: true})
                 username: data.username,
                 userphoto: data.userphoto,
                 time: data.time,
-                quote: {
-                    message: data.quote
-                }
+                quote: data.quoteId
             };
-            db.collection('messages').insertOne(msg).catch(err => console.error('Message not added: ', err)),
-            io.sockets.emit('new_message', msg)
+            db.collection('messages').insertOne(msg)
+                .then(data => io.sockets.emit('new_message', msg))
+                .catch(err => console.error('Message not added: ', err))
         }),
 
         socket.on('typing', (data) => {
