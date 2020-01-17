@@ -107,7 +107,7 @@ $(document).ready(() => {
                     ${user ? `<div class="message_quote_user">${user}</div>` : ''}
                     ${checkImg(content)
                         ? `<div class="message_quote_text media"><img src="${content}" class="image" alt=""></div>`
-                        : `<div class="message_quote_text">${content}</div>`
+                        : `<div class="message_quote_text">${findLink(content)}</div>`
                     }
                 </div>
             `;

@@ -14,7 +14,11 @@
 - Ability to quote messages
 
 ## Install
-`npm init`
+clone repo via git
+`https://github.com/xrystalll/GOchat_2.git`
+
+or download
+https://github.com/xrystalll/GOchat_2/archive/master.zip
 
 `npm install`
 
