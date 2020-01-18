@@ -54,6 +54,8 @@ $(document).ready(() => {
 
     const checkImg = (url) => url.toLowerCase().match(/\.(jpeg|jpg|png|webp|gif|bmp)$/) != null;
 
+    const checkVideo = (url) => url.toLowerCase().match(/\.(mp4|webm|3gp|avi)$/) != null;
+
     const checkUrl = (url) => url.match(/(https?:\/\/[^\s]+)/g) != null;
 
     const findLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '<a class="link" href="$1" target="_blank" title="Open in new tab">$1</a>');
@@ -74,9 +76,10 @@ $(document).ready(() => {
                             ${type !== 'media' ? `<div class="message_user">${user}</div>` : ''}
                             <div class="quote_block"></div>
                             <div class="message_text">
-                                ${type === 'media'
-                                    ? `<img src="${content}" class="image" ${!checkUrl(content) ? `data-url="${content.substring(content.lastIndexOf('/') + 1)}"` : ''} alt="">`
-                                    : findLink(content)
+                                ${!checkVideo(content) ? type !== 'media'
+                                    ? findLink(content)
+                                    : `<img src="${content}" class="image" ${!checkUrl(content) ? `data-url="${content.substring(content.lastIndexOf('/') + 1)}"` : ''} alt="">`
+                                    : `<video src="${content}" class="video" preload="true" controls=""></video>`
                                 }
                             </div>
                             <div class="message_time" data-time="${time}">${timeFormat(time)}</div>
@@ -105,9 +108,10 @@ $(document).ready(() => {
             return `
                 <div class="quote">
                     ${user ? `<div class="message_quote_user">${user}</div>` : ''}
-                    ${checkImg(content)
-                        ? `<div class="message_quote_text media"><img src="${content}" class="image" alt=""></div>`
-                        : `<div class="message_quote_text">${findLink(content)}</div>`
+                    ${!checkVideo(content) ? !checkImg(content)
+                        ? `<div class="message_quote_text">${findLink(content)}</div>`
+                        : `<div class="message_quote_text media"><img src="${content}" class="image" alt=""></div>`
+                        : `<div class="message_quote_text">Video</div>`
                     }
                 </div>
             `;
@@ -325,6 +329,7 @@ $(document).ready(() => {
     // UI: Itit quote form
     $(document).on('click', '.quote_btn', function() {
         const media = $(this).parent().find('.message_block_right').hasClass('media');
+        const video = $(this).parent().find('.video').attr('src');
         quote_form.addClass('active'),
         media ? (
             $('.quote_form .message_user').addClass('none'),
@@ -334,8 +339,11 @@ $(document).ready(() => {
             $('.quote_form .message_text').removeClass('media')
         ),
         $('.quote_form .message_user').text($(this).parent().data('user')),
-        $('.quote_form .message_text').html($(this).parent().find('.message_text').html().trim()),
         $('.quote_form .quoteId').text($(this).parent().data('id')),
+        video && checkVideo(video) ? (
+            $('.quote_form .message_user').removeClass('none'),
+            $('.quote_form .message_text').removeClass('media').empty().text('Video'),
+        ) : $('.quote_form .message_text').html($(this).parent().find('.message_text').html().trim()),
         message.focus()
     }),
 
@@ -349,7 +357,7 @@ $(document).ready(() => {
             $('.empty-results').remove(),
             document.querySelector('#chat').children.length === 0 && (
                 $.each(data, (i) => {
-                    const content = checkImg(data[i].message) ? 'media' : undefined;
+                    const content = checkImg(data[i].message) || checkVideo(data[i].message) ? 'media' : undefined;
                     const my = data[i].username === localStorage.getItem('username');
                     chat.prepend(
                         template.message(
@@ -378,7 +386,7 @@ $(document).ready(() => {
 
     // UI: Adding new message
     socket.on('new_message', (data) => {
-        const content = checkImg(data.message) ? 'media' : undefined;
+        const content = checkImg(data.message) || checkVideo(data.message) ? 'media' : undefined;
         const my = data.username === localStorage.getItem('username');
         const sound = new Audio('./sounds/new_in.wav');
         document.body.scrollHeight - (window.scrollY + window.innerHeight) < 150 && (
@@ -418,7 +426,7 @@ $(document).ready(() => {
             $('.empty-results').remove(),
             document.querySelector('#chat').children.length !== 0 && (
                 $.each(data, (i) => {
-                    const content = checkImg(data[i].message) ? 'media' : undefined;
+                    const content = checkImg(data[i].message) || checkVideo(data[i].message) ? 'media' : undefined;
                     const my = data[i].username === localStorage.getItem('username');
                     one_h = $('.message_item').outerHeight(true),
                     position += one_h,

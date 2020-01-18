@@ -354,6 +354,9 @@ header {
     max-width: 100%;
     cursor: pointer;
 }
+.media .message_text .video {
+    width: 100%;
+}
 .media .message_time {
     position: absolute;
     bottom: 5px;
