@@ -79,10 +79,10 @@ $(document).ready(() => {
                                 ${!checkVideo(content) ? type !== 'media'
                                     ? findLink(content)
                                     : `<img src="${content}" class="image" ${!checkUrl(content) ? `data-url="${content.substring(content.lastIndexOf('/') + 1)}"` : ''} alt="">`
-                                    : `<video src="${content}" class="video" preload="true" controls=""></video>`
+                                    : `<video src="${content}" class="video" preload="true" loop controls></video>`
                                 }
                             </div>
-                            <div class="message_time" data-time="${time}">${timeFormat(time)}</div>
+                            <div class="message_time">${timeFormat(time)}</div>
                         </div>
                     </div>
 
@@ -342,7 +342,7 @@ $(document).ready(() => {
         $('.quote_form .quoteId').text($(this).parent().data('id')),
         video && checkVideo(video) ? (
             $('.quote_form .message_user').removeClass('none'),
-            $('.quote_form .message_text').removeClass('media').empty().text('Video'),
+            $('.quote_form .message_text').removeClass('media').empty().text('Video')
         ) : $('.quote_form .message_text').html($(this).parent().find('.message_text').html().trim()),
         message.focus()
     }),

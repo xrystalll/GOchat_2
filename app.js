@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const conf = require(path.join(__dirname, '/config.json'));
+const conf = require(path.join(__dirname, 'config.json'));
 
 const express = require('express');
 const app = express();
@@ -27,27 +27,23 @@ const checkFileType = (file, cb) => {
         cb('Error: It\'s not image');
     }
 };
+const storage = (dest, name) => {
+    return multer.diskStorage({
+        destination: path.join(__dirname, 'public', 'uploads', dest),
+        filename: (req, file, cb) => {
+            cb(null, name + '_' + Date.now() + path.extname(file.originalname))
+        }
+    })
+};
 
-const storage1 = multer.diskStorage({
-    destination: path.join(__dirname, 'public', 'uploads', 'avatars'),
-    filename: (req, file, cb) => {
-        cb(null, 'avatar_' + Date.now() + path.extname(file.originalname))
-    }
-});
-const upload1 = multer({
-    storage: storage1,
+const uploadAvatar = multer({
+    storage: storage('avatars', 'avatar'),
     limits: { fileSize: 1048576 * conf.maxsize },
     fileFilter: (req, file, cb) => checkFileType(file, cb)
 }).single('avatar');
 
-const storage2 = multer.diskStorage({
-    destination: path.join(__dirname, 'public', 'uploads', 'attachments'),
-    filename: (req, file, cb) => {
-        cb(null, 'image_' + Date.now() + path.extname(file.originalname))
-    }
-});
-const upload2 = multer({
-    storage: storage2,
+const uploadImage = multer({
+    storage: storage('attachments', 'image'),
     limits: { fileSize: 1048576 * conf.maxsize * 2 },
     fileFilter: (req, file, cb) => checkFileType(file, cb)
 }).single('image');
@@ -64,7 +60,7 @@ app.get('/', (req, res) => {
 }),
 
 app.post('/upload/avatar', (req, res) => {
-    upload1(req, res, (err) => {
+    uploadAvatar(req, res, (err) => {
         req.file ? (
             sharp(req.file.path)
                 .resize(300, 300)
@@ -81,7 +77,7 @@ app.post('/upload/avatar', (req, res) => {
 }),
 
 app.post('/upload/image', (req, res) => {
-    upload2(req, res, (err) => {
+    uploadImage(req, res, (err) => {
         req.file ? (
             res.json({ image: './img/attachments/' + req.file.filename })
         ) : (

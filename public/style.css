@@ -340,6 +340,9 @@ header {
 .message_block_right.media {
     padding: 0;
 }
+.message_block_right.media:hover .message_time {
+    display: none;
+}
 .media .message_user {
     padding: 4px 12px;
 }
