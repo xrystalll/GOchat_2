@@ -475,6 +475,7 @@ header {
 }
 .quote_main .quote {
     margin: 0;
+    padding-right: 8px;
 }
 .quote .message_text img {
     max-width: 100%;

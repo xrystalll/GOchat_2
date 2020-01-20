@@ -445,7 +445,7 @@ $(document).ready(() => {
                         data[i].message.match(/(https?:\/\/[^\s]+)/g)[0],
                         data[i]._id
                     ),
-                    quoteInit(
+                    data[i].quote && quoteInit(
                         data[i].quote,
                         data[i]._id
                     )

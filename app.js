@@ -87,12 +87,10 @@ app.post('/upload/image', (req, res) => {
 }),
 
 app.get('/img/users/:file', (req, res) => {
-    res.type('image/png'),
     res.sendFile(path.join(__dirname, 'public', 'uploads', 'avatars', req.params.file))
 }),
 
 app.get('/img/attachments/:file', (req, res) => {
-    res.type('image/png'),
     res.sendFile(path.join(__dirname, 'public', 'uploads', 'attachments', req.params.file))
 }),
 
