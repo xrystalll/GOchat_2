@@ -78,7 +78,9 @@ $(document).ready(() => {
                             <div class="message_text">
                                 ${!checkVideo(content) ? type !== 'media'
                                     ? findLink(content)
-                                    : `<img src="${content}" class="image" ${!checkUrl(content) ? `data-url="${content.substring(content.lastIndexOf('/') + 1)}"` : ''} alt="">`
+                                    : `<a href="${content}" data-fancybox="gallery" target="_blank">
+                                        <img src="${content}" class="image" ${!checkUrl(content) ? `data-url="${content.substring(content.lastIndexOf('/') + 1)}"` : ''} alt="">
+                                    </a>`
                                     : `<video src="${content}" class="video" preload="true" loop controls></video>`
                                 }
                             </div>
@@ -110,7 +112,11 @@ $(document).ready(() => {
                     ${user ? `<div class="message_quote_user">${user}</div>` : ''}
                     ${!checkVideo(content) ? !checkImg(content)
                         ? `<div class="message_quote_text">${findLink(content)}</div>`
-                        : `<div class="message_quote_text media"><img src="${content}" class="image" alt=""></div>`
+                        : `<div class="message_quote_text media">
+                            <a href="${content}" data-fancybox="gallery" target="_blank">
+                                <img src="${content}" class="image" alt="">
+                            </a>
+                        </div>`
                         : `<div class="message_quote_text">Video</div>`
                     }
                 </div>
