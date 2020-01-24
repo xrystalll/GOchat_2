@@ -102,8 +102,8 @@ app.get('/preview', (req, res) => {
 
 MongoClient.connect(conf.mongoremote, { useUnifiedTopology: true })
 .then(client => {
+    console.log(`MongoDB connected. Database: ${conf.dbname}`);
     const db = client.db(conf.dbname);
-    console.log(`MongoDB connected. Database: ${conf.dbname}`),
     db.createCollection('messages').catch(err => console.error('Error to create collection: ', err)),
     io.on('connection', (socket) => {
         console.log('New user connected'),
