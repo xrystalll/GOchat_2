@@ -9,7 +9,7 @@ const server = require('http').createServer(app)
 
 const Mongoose = require('mongoose')
 require(path.join(__dirname, 'modules', 'DB'))
-const MessagesDB = require(path.join(__dirname, 'modules', 'MessagesDB'))
+const MessageDB = require(path.join(__dirname, 'modules', 'MessageDB'))
 
 const io = require('socket.io').listen(server)
 
@@ -68,19 +68,15 @@ app.post('/upload/avatar', (req, res) => {
           res.json({ image: req.file.filename })
         })
         .catch(err => console.error(err))
-    ) : (
-      res.json({ error: err })
-    )
+    ) : res.json({ error: err })
   })
 })
 
 app.post('/upload/image', (req, res) => {
   uploadImage(req, res, (err) => {
-    req.file ? (
-      res.json({ image: './img/attachments/' + req.file.filename })
-    ) : (
-      res.json({ error: err })
-    )
+    req.file
+      ? res.json({ image: './img/attachments/' + req.file.filename })
+      : res.json({ error: err })
   })
 })
 
@@ -99,7 +95,7 @@ app.get('/preview', (req, res) => {
 })
 
 app.get('/message', (req, res) => {
-  MessagesDB.find({ _id: Mongoose.Types.ObjectId(req.query.id) })
+  MessageDB.find({ _id: Mongoose.Types.ObjectId(req.query.id) })
     .then(data => res.json(data))
     .catch(err => res.json({ error: err }))
 })
@@ -108,19 +104,17 @@ io.on('connection', (socket) => {
   console.log('New user connected')
   socket.username = 'Anonim'
 
-  MessagesDB.find().sort({ time: -1 }).skip(0).limit(10)
+  MessageDB.find().sort({ time: -1 }).skip(0).limit(10)
     .then(data => socket.emit('output', data))
     .catch(err => console.error('Messages not displayed: ', err))
 
   socket.on('get_more', (data) => {
-    MessagesDB.find().sort({ time: -1 }).skip(data.offset).limit(10)
+    MessageDB.find().sort({ time: -1 }).skip(data.offset).limit(10)
       .then(data => socket.emit('more', data))
       .catch(err => console.error('Messages not displayed: ', err))
   })
 
-  socket.on('set_username', (data) => {
-    socket.username = data.username
-  })
+  socket.on('set_username', (data) => socket.username = data.username)
 
   socket.on('set_userphoto', (data) => {
     socket.userphoto = data.userphoto
@@ -138,15 +132,13 @@ io.on('connection', (socket) => {
       time: data.time,
       quote: data.quoteId
     }
-    MessagesDB.create(msg)
+    MessageDB.create(msg)
       .then(data => io.sockets.emit('new_message', data))
       .catch(err => console.error('Message not added: ', err))
   })
 
   socket.on('typing', (data) => {
-    if (typings.indexOf(data.username) === -1) {
-      typings.push(data.username)
-    }
+    if (typings.indexOf(data.username) === -1) typings.push(data.username)
     socket.broadcast.emit('typing', { typings })
   })
 
@@ -158,10 +150,8 @@ io.on('connection', (socket) => {
 
   socket.on('delete', (data) => {
     data.username === socket.username ? (
-      data.file && (
-        fs.unlinkSync(path.join(__dirname, 'public', 'uploads', 'attachments', data.file))
-      ),
-      MessagesDB.deleteOne({ _id: Mongoose.Types.ObjectId(data.id) }, () => {
+      data.file && fs.unlinkSync(path.join(__dirname, 'public', 'uploads', 'attachments', data.file)),
+      MessageDB.deleteOne({ _id: Mongoose.Types.ObjectId(data.id) }, () => {
         io.emit('delete', { id: data.id })
       })
     ) : (
@@ -175,7 +165,7 @@ io.on('connection', (socket) => {
   socket.on('clear', (data) => {
     const dir = path.join(__dirname, 'public', 'uploads', 'attachments')
     data.password === conf.password ? (
-      MessagesDB.deleteMany({}, () => {
+      MessageDB.deleteMany({}, () => {
         io.emit('cleared')
         io.emit('alert', {
           message: 'All messages deleted',
