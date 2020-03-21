@@ -26,7 +26,7 @@ $(document).ready(() => {
 
     const timeFormat = (timestamp) => {
         const d = new Date();
-        const t = new Date(timestamp);
+        const t = new Date(timestamp * 1);
 
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -212,7 +212,7 @@ $(document).ready(() => {
         fetch(`/message?id=${id}`)
             .then(response => response.json())
             .then(response => {
-                const data = response.data[0];
+                const data = response[0];
                 $(`.message_item[data-id="${el}"] .quote_block`).html(
                     data
                         ? template.quote(data.username, data.message)

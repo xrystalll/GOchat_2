@@ -20,7 +20,7 @@
     "ejs": "^3.0.1",
     "express": "^4.17.1",
     "link-preview-node": "^1.0.4",
-    "mongodb": "^3.4.1",
+    "mongoose": "^5.9.5",
     "multer": "^1.4.2",
     "nodemon": "^2.0.2",
     "sharp": "^0.23.4",
