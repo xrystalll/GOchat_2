@@ -1,7 +1,7 @@
 {
-    "port": 3000,
-    "mongolocal": "mongodb://localhost:27017",
-    "mongoremote": "mongodb+srv://xrystalll:vDdB2iRLQ1cWZfIC@xllldb-rp7li.mongodb.net/gochat",
-    "maxsize": 10,
-    "password": "mypass"
+  "port": 3000,
+  "mongolocal": "mongodb://localhost:27017",
+  "mongoremote": "mongodb+srv://xrystalll:vDdB2iRLQ1cWZfIC@xllldb-rp7li.mongodb.net/gochat",
+  "maxsize": 10,
+  "password": "mypass"
 }

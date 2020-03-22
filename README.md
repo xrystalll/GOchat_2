@@ -13,6 +13,7 @@
 - Clearing all messages via command with password
 - Ability to quote messages
 - Sending videos by url from internet
+- Browser notifications
 
 ## Install
 clone repo via git

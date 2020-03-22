@@ -138,7 +138,7 @@ io.on('connection', (socket) => {
   })
 
   socket.on('typing', (data) => {
-    if (typings.indexOf(data.username) === -1) typings.push(data.username)
+    if (typings.indexOf(data.username) === -1 && data.username) typings.push(data.username)
     socket.broadcast.emit('typing', { typings })
   })
 
@@ -169,7 +169,7 @@ io.on('connection', (socket) => {
         io.emit('cleared')
         io.emit('alert', {
           message: 'All messages deleted',
-          type: 'info'
+          type: 'success'
         })
       }),
       fs.readdir(dir, (err, files) => {
