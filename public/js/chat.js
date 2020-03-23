@@ -16,12 +16,14 @@ $(document).ready(() => {
   const limit = 10;
   let offset = 0;
   let end = false;
+  let typings = [];
 
   const warning = (message, type = 'info') => {
-    $('body').append(`<div class="alert ${type}">${message}</div>`),
-    $('.alert').fadeIn(800).fadeOut(3000),
+    const id = Math.random().toString(36).substr(2, 8);
+    $('body').append(`<div class="alert ${type}" data-id="${id}">${message}</div>`),
+    $(`.alert[data-id="${id}"]`).fadeIn(800).fadeOut(3000),
     setTimeout(() => {
-      $('.alert').remove()
+      $(`.alert[data-id="${id}"]`).remove()
     }, 3800)
   };
 
@@ -77,7 +79,7 @@ $(document).ready(() => {
               ${type !== 'media' ? `<div class="message_user">${user}</div>` : ''}
               <div class="quote_block"></div>
               <div class="message_text">
-                ${!checkVideo(content) ? type !== 'media'
+                ${!checkVideo(content) ? (type !== 'media')
                   ? findLink(content)
                   : `<a href="${content}" data-fancybox="gallery" target="_blank">
                     <img src="${content}" class="image" ${!checkUrl(content) ? `data-url="${content.substring(content.lastIndexOf('/') + 1)}"` : ''} alt="">
@@ -137,10 +139,12 @@ $(document).ready(() => {
       return `
         <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
           <path d="M0 0h24v24H0V0z" fill="none"/></path>
-          <path d="M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" fill="${color}"/>
-          </path>
+          <path d="M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" fill="${color}"/></path>
         </svg>
       `;
+    },
+    avatar: (username) => {
+      return `<label for="avatarInput" class="user" title="Set your photo">${username.slice(0, 1)}</label>`;
     }
   };
 
@@ -152,7 +156,7 @@ $(document).ready(() => {
     localStorage.getItem('username') ? (
       user = localStorage.getItem('username')
     ) : (
-      user.length > 3 && (
+      (user.length > 3) && (
         user = username.val().replace(/(<([^>]+)>)/ig, '').trim(),
         localStorage.setItem('username', user),
         socket.emit('set_username', {
@@ -160,11 +164,13 @@ $(document).ready(() => {
         }),
         username.remove(),
         attachment.removeClass('none'),
-        message_form.prepend(`<label for="avatarInput" class="user" title="Set your photo">${localStorage.getItem('username').slice(0, 1)}</label>`)
+        message_form.prepend(
+          template.avatar(localStorage.getItem('username'))
+        )
       )
     );
 
-    user.length > 3 ? text ? (
+    (user.length > 3) ? text ? (
       message.val(''),
       message_form.removeClass('typed'),
       socket.emit('stop_typing', { username: localStorage.getItem('username') }),
@@ -266,12 +272,12 @@ $(document).ready(() => {
   };
 
   // Handler: Push browser notification
-  const sendNotification = (data) => {
+  const sendNotification = (data, callback) => {
     if (data === undefined || !data) return false
+    const clickCallback = callback
     const title = (data.title === undefined) ? 'Notification' : data.title
-    const clickCallback = data.clickCallback
     const message = (data.message === undefined) ? 'Empty message' : data.message
-    const icon = (data.icon === undefined) ? 'https://raw.githubusercontent.com/xrystalll/GOchat_2/master/public/images/icon_192.png' : data.icon
+    const icon = (data.icon === undefined) ? window.location.href +'/images/icon_192.png' : data.icon
     const image = (data.image === undefined) ? undefined : data.image
     const sendNotification = () => {
       const notification = new Notification(title, {
@@ -287,9 +293,8 @@ $(document).ready(() => {
       }
     }
 
-    if (!window.Notification) {
-      return false
-    } else {
+    if (!window.Notification) return false
+    else {
       if (Notification.permission === 'default') {
         Notification.requestPermission(permission => {
           if (permission !== 'denied') sendNotification()
@@ -315,7 +320,9 @@ $(document).ready(() => {
     }),
     username.remove(),
     attachment.removeClass('none'),
-    message_form.prepend(`<label for="avatarInput" class="user" title="Set your photo">${localStorage.getItem('username').slice(0, 1)}</label>`)
+    message_form.prepend(
+      template.avatar(localStorage.getItem('username'))
+    )
   ),
 
   // UI: Check photo in localstorage
@@ -330,58 +337,57 @@ $(document).ready(() => {
   send_message.on('click', () => {
     let text = message.val().replace(/(<([^>]+)>)/ig, '').trim();
     if (text.length > 1) {
-      text.length > 1500 && (
+      (text.length > 1500) && (
         text = text.substr(0, 1500)
       );
-      const value = text.split(/[\s,]+/);
+      const value = text.split(' ');
       const quoteActive = quote_form.hasClass('active');
       let quoteId;
       quoteActive && (
         quoteId = quote_form.find('.quoteId').text()
       ),
-      value[0] === '/clear' ? clear(value[1]) : write(text, quoteId)
+      (value[0] === '/clear') ? clear(value[1]) : write(text, quoteId)
     } else warning('Enter message text', 'error')
-  }),
-
-  // UI: Check notification settings in localstorage
-  localStorage.getItem('notifications') === 'disable' && (
-    notif_setting.removeClass('on').addClass('off')
-  ),
-
-  // UI: Toggle notification icon and setting in localstorage
-  notif_setting.on('click', () => {
-    if (localStorage.getItem('notifications') !== 'disable') {
-      warning('Successfully saved', 'success'),
-      localStorage.setItem('notifications', 'disable'),
-      notif_setting.removeClass('on').addClass('off')
-    } else {
-      warning('Successfully saved', 'success'),
-      localStorage.setItem('notifications', 'enable'),
-      notif_setting.removeClass('off').addClass('on')
-    }
   }),
 
   // UI: Send message via ENTER key
   $(document).on('keyup', '#nameInput, #textInput', (e) => {
     let text = message.val().replace(/(<([^>]+)>)/ig, '').trim();
     if (text.length > 1 && e.which === 13) {
-      if (text.length >= 1500) {
+      (text.length > 1500) && (
         text = text.substr(0, 1500)
-      }
-      const value = text.trim().split(/[\s,]+/);
+      );
+      const value = text.split(' ');
       const quoteActive = quote_form.hasClass('active');
       let quoteId;
       quoteActive && (
         quoteId = quote_form.find('.quoteId').text()
       ),
-      value[0] === '/clear' ? clear(value[1]) : write(text, quoteId)
+      (value[0] === '/clear') ? clear(value[1]) : write(text, quoteId)
+    }
+  }),
+
+  // UI: Check notification settings in localstorage
+  (localStorage.getItem('notifications') === 'disable') && (
+    notif_setting.removeClass('on').addClass('off')
+  ),
+
+  // UI: Toggle notification icon and setting in localstorage
+  notif_setting.on('click', () => {
+    warning('Successfully saved', 'success')
+    if (localStorage.getItem('notifications') !== 'disable') {
+      localStorage.setItem('notifications', 'disable'),
+      notif_setting.removeClass('on').addClass('off')
+    } else {
+      localStorage.setItem('notifications', 'enable'),
+      notif_setting.removeClass('off').addClass('on')
     }
   }),
 
   // UI: Toggle visible sending button
   message.on('keyup', () => {
-    message.val().trim().length > 1 && message_form.addClass('typed'),
-    message.val().trim().length < 2 && message_form.removeClass('typed')
+    (message.val().trim().length > 1) && message_form.addClass('typed'),
+    (message.val().trim().length < 2) && message_form.removeClass('typed')
   }),
 
   // UI: Itit quote form
@@ -410,10 +416,10 @@ $(document).ready(() => {
 
   // UI: Output old messages from DB
   socket.on('output', (data) => {
-    data.length > 0 ? (
-      data.length < limit && socket.emit('get_more', { offset: offset += limit }),
+    (data.length > 0) ? (
+      (data.length < limit) && socket.emit('get_more', { offset: offset += limit }),
       $('.empty-results').remove(),
-      document.querySelector('#chat').children.length === 0 && (
+      (document.querySelector('#chat').children.length === 0) && (
         $.each(data, (i) => {
           const content = checkImg(data[i].message) || checkVideo(data[i].message) ? 'media' : undefined;
           const my = data[i].username === localStorage.getItem('username');
@@ -428,7 +434,7 @@ $(document).ready(() => {
               my
             )
           ),
-          checkUrl(data[i].message) && content !== 'media' && linkPreview(
+          checkUrl(data[i].message) && (content !== 'media') && linkPreview(
             data[i].message.match(/(https?:\/\/[^\s]+)/g)[0],
             data[i]._id
           ),
@@ -450,24 +456,22 @@ $(document).ready(() => {
     const icon = data.userphoto ? window.location.href + 'img/users/' + data.userphoto : undefined;
     const message = checkImg(data.message) ? 'Image' : checkVideo(data.message) ? 'Video' : data.message;
     const image = checkImg(data.message) ? data.message : undefined;
-    document.body.scrollHeight - (window.scrollY + window.innerHeight) < 150 && (
+    (document.body.scrollHeight - (window.scrollY + window.innerHeight) < 150) && (
       $('html, body').animate({ scrollTop: $(document).height() }, 100)
     ),
     my ? $('html, body').animate({ scrollTop: $(document).height() }, 100) : (
       sound.play(),
-      status.removeClass('typing').text(),
-      localStorage.getItem('notifications') !== 'disable' && (
+      (localStorage.getItem('notifications') !== 'disable' && document.visibilityState !== 'visible') && (
         sendNotification({
           title: data.username,
           message,
           icon,
-          image,
-          clickCallback: () => {
-            $(`.message_item[data-id="${data._id}"]`).addClass('choosenhover'),
-            setTimeout(() => {
-              $(`.message_item[data-id="${data._id}"]`).removeClass('choosenhover')
-            }, 5000)
-          }
+          image
+        }, () => {
+          $(`.message_item[data-id="${data._id}"]`).addClass('choosenhover'),
+          setTimeout(() => {
+            $(`.message_item[data-id="${data._id}"]`).removeClass('choosenhover')
+          }, 5000)
         })
       )
     ),
@@ -483,7 +487,7 @@ $(document).ready(() => {
         my
       )
     ),
-    checkUrl(data.message) && content !== 'media' && linkPreview(
+    checkUrl(data.message) && (content !== 'media') && linkPreview(
       data.message.match(/(https?:\/\/[^\s]+)/g)[0],
       data._id
     ),
@@ -497,9 +501,9 @@ $(document).ready(() => {
   socket.on('more', (data) => {
     let position = 0;
     let one_h = 0;
-    data.length > 0 ? (
+    (data.length > 0) ? (
       $('.empty-results').remove(),
-      document.querySelector('#chat').children.length !== 0 && (
+      (document.querySelector('#chat').children.length !== 0) && (
         $.each(data, (i) => {
           const content = checkImg(data[i].message) || checkVideo(data[i].message) ? 'media' : undefined;
           const my = data[i].username === localStorage.getItem('username');
@@ -516,7 +520,7 @@ $(document).ready(() => {
               my
             )
           ),
-          checkUrl(data[i].message) && content !== 'media' && linkPreview(
+          checkUrl(data[i].message) && (content !== 'media') && linkPreview(
             data[i].message.match(/(https?:\/\/[^\s]+)/g)[0],
             data[i]._id
           ),
@@ -532,29 +536,46 @@ $(document).ready(() => {
 
   $(window).scroll(() => {
     !end && (
-      $(window).scrollTop() === 0 && (
+      ($(window).scrollTop() === 0) && (
         socket.emit('get_more', { offset: offset += limit })
       )
     )
   });
 
 
-  if (localStorage.getItem('username')) {
-    message.bind('keyup', () => socket.emit('typing', { username: localStorage.getItem('username') }))
-  }
+  message.on('keyup', () => {
+    if (message.val().length === 0) return
 
-  socket.on('typing', (data) => {      
-    let items = data.typings.filter(item => item !== localStorage.getItem('username'));
+    (message.val().length > 1)
+      ? socket.emit('typing', { username: localStorage.getItem('username') })
+      : socket.emit('stop_typing', { username: localStorage.getItem('username') })
+  }),
+
+
+  socket.on('typing', (data) => {
+    typings = data.typings
+    if (typings.length < 1) return
+
+    const items = typings.filter(item => item !== localStorage.getItem('username'));
     let typers;
-    data.typings.length < 3
+    (typings.length < 3)
       ? typers = items.join(', ') + ' typing a message...'
       : typers = 'Several people are typing...',
     status.addClass('typing').text(typers)
   }),
 
 
-  message.focusout(() => socket.emit('stop_typing', { username: localStorage.getItem('username') })),
-  socket.on('stop_typing', () => status.removeClass('typing').empty()),
+  message.focusout(() => {
+    if (message.val().length < 2) return
+
+    socket.emit('stop_typing', { username: localStorage.getItem('username') })
+  }),
+
+
+  socket.on('stop_typing', (data) => {
+    typings = data.typings
+    status.removeClass('typing').empty()
+  }),
 
 
   $(document).on('click', '.del', function() {

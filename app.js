@@ -68,7 +68,7 @@ app.post('/upload/avatar', (req, res) => {
           res.json({ image: req.file.filename })
         })
         .catch(err => console.error(err))
-    ) : res.json({ error: err })
+    ) : res.status(500).json({ error: err })
   })
 })
 
@@ -76,7 +76,7 @@ app.post('/upload/image', (req, res) => {
   uploadImage(req, res, (err) => {
     req.file
       ? res.json({ image: './img/attachments/' + req.file.filename })
-      : res.json({ error: err })
+      : res.status(500).json({ error: err })
   })
 })
 
@@ -91,13 +91,13 @@ app.get('/img/attachments/:file', (req, res) => {
 app.get('/preview', (req, res) => {
   linkPreview(req.query.url)
     .then(data => res.json({ data }))
-    .catch(err => res.json({ error: err }))
+    .catch(err => res.status(500).json({ error: err }))
 })
 
 app.get('/message', (req, res) => {
   MessageDB.find({ _id: Mongoose.Types.ObjectId(req.query.id) })
     .then(data => res.json(data))
-    .catch(err => res.json({ error: err }))
+    .catch(err => res.status(500).json({ error: err }))
 })
 
 io.on('connection', (socket) => {
@@ -138,14 +138,14 @@ io.on('connection', (socket) => {
   })
 
   socket.on('typing', (data) => {
-    if (typings.indexOf(data.username) === -1 && data.username) typings.push(data.username)
+    if (data.username && typings.indexOf(data.username) === -1) typings.push(data.username)
     socket.broadcast.emit('typing', { typings })
   })
 
   socket.on('stop_typing', (data) => {
     const index = typings.indexOf(data.username)
     index > -1 && typings.splice(index, 1)
-    io.emit('stop_typing')
+    io.emit('stop_typing', { typings, username: data.username })
   })
 
   socket.on('delete', (data) => {
@@ -189,7 +189,9 @@ io.on('connection', (socket) => {
   })
 
   socket.on('disconnect', () => {
-    socket.broadcast.emit('stop_typing')
+    const index = typings.indexOf(socket.username)
+    index > -1 && typings.splice(index, 1)
+    socket.broadcast.emit('stop_typing', { typings, username: socket.username })
     console.log('User disconnected')
   })
 })
