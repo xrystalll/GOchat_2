@@ -149,11 +149,15 @@ io.on('connection', (socket) => {
   })
 
   socket.on('delete', (data) => {
+    let file
     data.username === socket.username ? (
-      data.file && fs.unlinkSync(path.join(__dirname, 'public', 'uploads', 'attachments', data.file)),
       MessageDB.deleteOne({ _id: Mongoose.Types.ObjectId(data.id) }, () => {
         io.emit('delete', { id: data.id })
-      })
+      }),
+      data.file && (
+        file = path.join(__dirname, 'public', 'uploads', 'attachments', data.file),
+        fs.existsSync(file) && fs.unlinkSync(file)
+      )
     ) : (
       socket.emit('alert', {
         message: 'It\'s not your message',
@@ -175,7 +179,7 @@ io.on('connection', (socket) => {
       fs.readdir(dir, (err, files) => {
         if (err) return console.error(err)
         for (const file of files) {
-          fs.unlink(path.join(dir, file), (err) => {
+          fs.unlinkSync(path.join(dir, file), (err) => {
             if (err) return console.error(err)
           })
         }

@@ -242,12 +242,12 @@ header {
   align-items: center;
   justify-content: center;
   padding: 8px;
+  border-radius: 50%;
   cursor: pointer;
   transition: all .1s ease-in;
 }
 .attachment:hover {
   background: var(--default-transparent-02);
-  border-radius: 50%;
 }
 .attachment i {
   color: var(--main-text-color);
@@ -486,6 +486,9 @@ header {
 }
 .quote .message_text {
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .quote .message_text.media {
   margin: 0;
