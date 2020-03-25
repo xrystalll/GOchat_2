@@ -83,7 +83,7 @@ $(document).ready(() => {
           </div>
 
           <div class="message_content">
-            <div class="message_block_right ${data.type}">
+            <div class="message_block_right ${data.type || ''}">
               ${data.type !== 'media' ? `<div class="message_user">${data.user}</div>` : ''}
               ${data.quote ? `<div class="quote_block"></div>` : ''}
               <div class="message_text">
@@ -124,7 +124,7 @@ $(document).ready(() => {
           ${!checkVideo(data.message) ? !checkImg(data.message)
             ? `<div class="message_quote_text">${findLink(data.message)}</div>`
             : `<div class="message_quote_text media">
-              <a href="${extractLink(data.message)}" data-fancybox="gallery" target="_blank">
+              <a href="${extractLink(data.message)}" data-fancybox target="_blank">
                 <img src="${extractLink(data.message)}" class="image" alt="">
               </a>
             </div>`
@@ -204,8 +204,7 @@ $(document).ready(() => {
   const linkPreview = (props) => {
     fetch(`/preview?url=${props.url}`)
       .then(response => response.json())
-      .then(response => {
-        const data = response.data;
+      .then(data => {
         if (data.title || data.description) {
           $(`.message_item[data-id="${props.id}"] .message_content`).append(
             template.preview(data)
@@ -262,7 +261,13 @@ $(document).ready(() => {
       body: formData
     })
     .then(response => response.json())
-    .then(data => write(data.image))
+    .then(data => {
+      let quoteId;
+      quote_form.hasClass('active') && (
+        quoteId = quote_form.find('.quoteId').text()
+      ),
+      write(data.image, quoteId)
+    })
     .catch(err => console.error(err))
   };
 

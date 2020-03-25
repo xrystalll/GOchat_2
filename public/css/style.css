@@ -108,7 +108,7 @@ i, img {
 }
 .empty_top {
   margin-top: 8px;
-  word-break: break-all;
+  word-break: break-word;
 }
 
 header {
@@ -386,6 +386,9 @@ header {
 .message_block_right.media:hover .message_time {
   display: none;
 }
+.message_block_right.media .quote_block {
+  padding: 8px 14px;
+}
 .media .message_user {
   padding: 4px 12px;
 }
@@ -484,11 +487,13 @@ header {
   padding-left: 8px;
   margin-top: 4px;
 }
-.quote .message_text {
-  margin: 0;
+.quote_main {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.quote .message_text {
+  margin: 0;
 }
 .quote .message_text.media {
   margin: 0;

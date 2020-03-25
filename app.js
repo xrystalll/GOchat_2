@@ -7,6 +7,10 @@ const express = require('express')
 const app = express()
 const server = require('http').createServer(app)
 
+const hpp = require('hpp')
+const helmet = require('helmet')
+const xssFilter = require('x-xss-protection')
+
 const Mongoose = require('mongoose')
 require(path.join(__dirname, 'modules', 'DB'))
 const MessageDB = require(path.join(__dirname, 'modules', 'MessageDB'))
@@ -53,6 +57,10 @@ server.listen(process.env.PORT || conf.port)
 app.set('view engine', 'ejs')
 app.use(express.static('public'))
 
+app.use(hpp()),
+app.use(helmet.noSniff()),
+app.use(xssFilter()),
+
 app.get('/', (req, res) => {
   res.render('index')
 })
@@ -90,7 +98,7 @@ app.get('/img/attachments/:file', (req, res) => {
 
 app.get('/preview', (req, res) => {
   linkPreview(req.query.url)
-    .then(data => res.json({ data }))
+    .then(data => res.json(data))
     .catch(err => res.status(500).json({ error: err }))
 })
 
@@ -179,7 +187,7 @@ io.on('connection', (socket) => {
       fs.readdir(dir, (err, files) => {
         if (err) return console.error(err)
         for (const file of files) {
-          fs.unlinkSync(path.join(dir, file), (err) => {
+          fs.unlink(path.join(dir, file), (err) => {
             if (err) return console.error(err)
           })
         }
