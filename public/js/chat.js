@@ -64,6 +64,15 @@ $(document).ready(() => {
 
   const findLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '<a class="link" href="$1" target="_blank" title="Open in new tab">$1</a>');
 
+  const checkAnswer = (text, user) => {
+    const matches = text.match(/@[a-z0-9а-я-_]+/gi)
+
+    if (matches && matches[0] === '@' + user) return true
+    return false
+  };
+
+  const findAnswer = (text) => text.replace(/@[a-z0-9а-я-_]+/gi, (a) => `<span class="link atuser">${a}</span>`);
+
   const extractLink = (text) => {
     const matches = text.match(/(https?:\/\/[^\s]+)/g)
 
@@ -77,8 +86,8 @@ $(document).ready(() => {
         <div class="message_item${data.my ? ' my' : ''}" data-id="${data.id}" data-user="${data.user}">
           <div class="message_block_left">
             ${data.photo
-              ? `<div class="message_avatar"${data.photo ? ` style="background-image: url('./img/users/${data.photo}');"` : ''}></div>`
-              : `<div class="message_avatar">${data.user ? data.user.slice(0, 1) : ''}</div>`
+              ? `<div class="message_avatar${!data.my ? ` answer" data-user="${data.user}` : ''}" ${data.photo ? ` style="background-image: url('./img/users/${data.photo}');"` : ''}></div>`
+              : `<div class="message_avatar answer${!data.my ? ` answer" data-user="${data.user}` : ''}">${data.user ? data.user.slice(0, 1) : ''}</div>`
             }
           </div>
 
@@ -88,7 +97,7 @@ $(document).ready(() => {
               ${data.quote ? `<div class="quote_block"></div>` : ''}
               <div class="message_text">
                 ${!checkVideo(data.message) ? (data.type !== 'media')
-                  ? findLink(data.message)
+                  ? findLink(findAnswer(data.message))
                   : `<a href="${extractLink(data.message)}" data-fancybox="gallery" target="_blank">
                     <img src="${extractLink(data.message)}" class="image" ${!checkUrl(data.message) ? `data-url="${data.message.substring(data.message.lastIndexOf('/') + 1)}"` : ''} alt="">
                   </a>`
@@ -122,7 +131,7 @@ $(document).ready(() => {
         <div class="quote">
           ${data.username ? `<div class="message_quote_user">${data.username}</div>` : ''}
           ${!checkVideo(data.message) ? !checkImg(data.message)
-            ? `<div class="message_quote_text">${findLink(data.message)}</div>`
+            ? `<div class="message_quote_text">${findLink(findAnswer(data.message))}</div>`
             : `<div class="message_quote_text media">
               <a href="${extractLink(data.message)}" data-fancybox target="_blank">
                 <img src="${extractLink(data.message)}" class="image" alt="">
@@ -279,11 +288,11 @@ $(document).ready(() => {
 
   // Handler: Push browser notification
   const sendNotification = (data, callback) => {
-    if (data === undefined || !data) return false
-    const title = (data.title === undefined) ? 'Notification' : data.title
-    const message = (data.message === undefined) ? 'Empty message' : data.message
-    const icon = (data.icon === undefined) ? window.location.href +'/images/icon_192.png' : data.icon
-    const image = (data.image === undefined) ? undefined : data.image
+    if (data === undefined || !data.message) return false
+    const title = (data.title === null) ? 'Notification' : data.title
+    const message = (data.message === null) ? 'Empty message' : data.message
+    const icon = (data.icon === null) ? window.location.href +'/images/icon_192.png' : data.icon
+    const image = (data.image === null) ? undefined : data.image
     const sendNotification = () => {
       const notification = new Notification(title, {
         icon,
@@ -417,8 +426,14 @@ $(document).ready(() => {
   // UI: Close quote form
   cancel_quote.on('click', cancelQuote),
 
+  // UI: Paste username to input
+  $(document).on('click', '.answer', function() {
+    message.val('@' + $(this).data('user') + ' ').focus()
+  }),
+
   // UI: Output old messages from DB
   socket.on('output', (data) => {
+    console.table(data),
     (data.length > 0) ? (
       (data.length < limit) && socket.emit('get_more', { offset: offset += limit }),
       $('.empty-results').remove(),
@@ -454,15 +469,15 @@ $(document).ready(() => {
     const type = checkImg(data.message) || checkVideo(data.message) ? 'media' : null;
     const my = data.username === USER;
     const sound = new Audio('./sounds/new_in.wav');
-    const icon = data.userphoto ? window.location.href + 'img/users/' + data.userphoto : undefined;
+    const icon = data.userphoto ? window.location.href + 'img/users/' + data.userphoto : null;
     const message = checkImg(data.message) ? 'Image' : checkVideo(data.message) ? 'Video' : data.message;
-    const image = checkImg(data.message) ? data.message : undefined;
+    const image = checkImg(data.message) ? data.message : null;
     (document.body.scrollHeight - (window.scrollY + window.innerHeight) < 150) && (
       $('html, body').animate({ scrollTop: $(document).height() }, 100)
     ),
     my ? $('html, body').animate({ scrollTop: $(document).height() }, 100) : (
       sound.play(),
-      (localStorage.getItem('notifications') !== 'disable' && document.visibilityState !== 'visible') && (
+      (checkAnswer(data.message, USER) && localStorage.getItem('notifications') !== 'disable' && document.visibilityState !== 'visible') && (
         sendNotification({
           title: data.username,
           message,
@@ -537,7 +552,7 @@ $(document).ready(() => {
         socket.emit('get_more', { offset: offset += limit })
       )
     )
-  });
+  }),
 
 
   message.on('keyup', () => {

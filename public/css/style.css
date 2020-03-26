@@ -346,6 +346,12 @@ header {
   background-position: center;
   cursor: default;
 }
+.answer {
+  cursor: pointer;
+}
+.atuser {
+  text-decoration: none;
+}
 .message_block_right {
   position: relative;
   display: flex;
