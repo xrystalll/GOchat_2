@@ -57,10 +57,27 @@
         <input type="text" id="nameInput" placeholder="Name">
         <div class="input_bar">
             <input type="text" id="textInput" placeholder="Enter a message...">
-            <label for="imageInput" class="attachment none" title="Send image">
+            <label for="imageInput" class="attachment image none" title="Send image">
                 <i class="material-icons">image</i>
             </label>
             <input type="file" id="imageInput" accept="image/*" class="none">
+            <span id="voiceInput" class="attachment record none" title="Record voice message">
+                <i class="material-icons">mic</i>
+            </span>
+        </div>
+        <div class="recording_bar none">
+            <div class="rec_indicator">
+                <div class="recording_time">0:00</div>
+                <div class="pulse_rec"></div>
+            </div>
+            <div class="recording_actions">
+                <span class="cancel_rec" title="Cancel recording">
+                    <i class="material-icons">close</i>
+                </span>
+                <span class="send_rec" title="Send voice message">
+                    <i class="material-icons">send</i>
+                </span>
+            </div>
         </div>
         <span id="send_message" class="write">
             <i class="material-icons">send</i>

@@ -19,6 +19,7 @@
   --default-transparent-02: rgba(0, 0, 0, .2);
   --default-transparent-04: rgba(0, 0, 0, .4);
   --default-transparent-06: rgba(0, 0, 0, .6);
+  --transparent-danger-color: rgba(229, 57, 53, .5);
 }
 * {
   outline: none;
@@ -237,7 +238,6 @@ header {
 }
 .attachment {
   position: absolute;
-  right: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -252,6 +252,12 @@ header {
 .attachment i {
   color: var(--main-text-color);
   font-size: 22px;
+}
+.attachment.image {
+  right: 48px;
+}
+.attachment.record {
+  right: 9px;
 }
 .write {
   display: none;
@@ -268,6 +274,63 @@ header {
 .write i {
   color: var(--accent-color);
   font-size: 22px;
+}
+.recording_bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: absolute;
+  right: 0;
+  background: var(--secondary-bg);
+  padding: 0 8px 0 16px;
+  height: 40px;
+  width: calc(100% - 54px);
+  z-index: 9;
+}
+.recording_actions {
+  display: flex;
+}
+.recording_actions span {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  margin-left: 2px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all .1s ease-in;
+}
+.recording_actions span:hover {
+  background: var(--default-transparent-02);
+}
+.recording_actions span i {
+  color: var(--main-text-color);
+  font-size: 22px;
+}
+.rec_indicator {
+  display: flex;
+  align-items: center;
+}
+.pulse_rec {
+  margin-left: 12px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--main-danger-color);
+  box-shadow: 0 0 0 0 var(--default-transparent-04);
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0% {
+    transform(scale(0.9));
+  }
+  70% {
+    transform(scale(1));
+    box-shadow: 0 0 0 2px var(--transparent-danger-color);
+  }
+  100% {
+    transform(scale(0.9));
+    box-shadow: 0 0 0 0 var(--transparent-danger-color);
+  }
 }
 
 .user {
@@ -384,6 +447,9 @@ header {
   color: var(--main-control-tint);
   margin-left: auto;
   cursor: default;
+}
+.voice {
+  max-width: 234px;
 }
 
 .message_block_right.media {

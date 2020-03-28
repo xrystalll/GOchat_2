@@ -9,7 +9,12 @@ $(document).ready(() => {
   const status = $('#status');
   const avatarInput = $('#avatarInput');
   const imageInput = $('#imageInput');
+  const voiceInput = $('#voiceInput');
   const attachment = $('.attachment');
+  const recording_bar = $('.recording_bar');
+  const recording_time = $('.recording_time');
+  const cancel_rec = $('.cancel_rec');
+  const send_rec = $('.send_rec');
   const quote_form = $('.quote_form');
   const cancel_quote = $('.cancel_quote');
   const notif_setting = $('.notif_setting');
@@ -60,6 +65,8 @@ $(document).ready(() => {
 
   const checkVideo = (url) => url.toLowerCase().match(/\.(mp4|webm|3gp|avi)$/) != null;
 
+  const checkAudio = (url) => url.toLowerCase().match(/\.(oga)$/) != null;
+
   const checkUrl = (url) => url.match(/(https?:\/\/[^\s]+)/g) != null;
 
   const findLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '<a class="link" href="$1" target="_blank" title="Open in new tab">$1</a>');
@@ -80,6 +87,18 @@ $(document).ready(() => {
     return matches[0]
   };
 
+  String.prototype.toHHMMSS = function() {
+    const sec_num = parseInt(this, 10)
+    let hours = Math.floor(sec_num / 3600)
+    let minutes = Math.floor((sec_num - (hours * 3600)) / 60)
+    let seconds = sec_num - (hours * 3600) - (minutes * 60)
+
+    if (hours > 0) { hours = hours + ':' }
+    if (seconds < 10) { seconds = '0' + seconds }
+
+    return hours + minutes + ':' + seconds
+  };
+
   const template = {
     message: (data) => {
       return `
@@ -96,12 +115,13 @@ $(document).ready(() => {
               ${data.type !== 'media' ? `<div class="message_user">${data.user}</div>` : ''}
               ${data.quote ? `<div class="quote_block"></div>` : ''}
               <div class="message_text">
-                ${!checkVideo(data.message) ? (data.type !== 'media')
+                ${!checkAudio(data.message) ? !checkVideo(data.message) ? (data.type !== 'media')
                   ? findLink(findAnswer(data.message))
                   : `<a href="${extractLink(data.message)}" data-fancybox="gallery" target="_blank">
-                    <img src="${extractLink(data.message)}" class="image" ${!checkUrl(data.message) ? `data-url="${data.message.substring(data.message.lastIndexOf('/') + 1)}"` : ''} alt="">
+                    <img src="${extractLink(data.message)}" class="image deleteble" ${!checkUrl(data.message) ? `data-url="${data.message.substring(data.message.lastIndexOf('/') + 1)}"` : ''} alt="">
                   </a>`
                   : `<video src="${extractLink(data.message)}" class="video" preload="true" loop controls></video>`
+                  : template.voice(data.message)
                 }
               </div>
               <div class="message_time">${timeFormat(data.time)}</div>
@@ -130,7 +150,7 @@ $(document).ready(() => {
       return `
         <div class="quote">
           ${data.username ? `<div class="message_quote_user">${data.username}</div>` : ''}
-          ${!checkVideo(data.message) ? !checkImg(data.message)
+          ${!checkAudio(data.message) ? !checkVideo(data.message) ? !checkImg(data.message)
             ? `<div class="message_quote_text">${findLink(findAnswer(data.message))}</div>`
             : `<div class="message_quote_text media">
               <a href="${extractLink(data.message)}" data-fancybox target="_blank">
@@ -138,8 +158,14 @@ $(document).ready(() => {
               </a>
             </div>`
             : '<div class="message_quote_text">Video</div>'
+            : template.voice(data.message)
           }
         </div>
+      `;
+    },
+    voice: (url) => {
+      return `
+        <audio class="voice deleteble" data-url="${url.substring(url.lastIndexOf('/') + 1)}" src="${extractLink(url)}" controls></audio>
       `;
     },
     error: (message) => {
@@ -261,11 +287,11 @@ $(document).ready(() => {
     .catch(err => console.error(err))
   };
 
-  // Handler: Uploading message image
-  const uploadImage = (file) => {
+  // Handler: Uploading attachment
+  const uploadAttachment = (file, param) => {
     const formData = new FormData;
-    formData.append('image', file)
-    fetch('/upload/image', {
+    formData.append(param.name, file)
+    fetch('/upload/' + param.name, {
       method: 'POST',
       body: formData
     })
@@ -317,6 +343,72 @@ $(document).ready(() => {
     }
   };
 
+  // Handler: Recording voice message
+  const recordAudio = () => new Promise(async resolve => {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    const mediaRecorder = new MediaRecorder(stream)
+    let audioChunks = []
+
+    mediaRecorder.addEventListener('dataavailable', (e) => {
+      audioChunks.push(e.data)
+    })
+
+    const start = () => {
+      audioChunks = []
+      mediaRecorder.start()
+    }
+
+    const stop = () => new Promise(resolve => {
+      mediaRecorder.addEventListener('stop', () => {
+        const audioBlob = new Blob(audioChunks)
+        resolve({ audioBlob })
+      })
+      mediaRecorder.stop()
+    })
+
+    const cancel = () => {
+      mediaRecorder.stop()
+      audioChunks = []
+    }
+
+    resolve({ start, stop, cancel })
+  });
+
+  // Handler: Recording timer
+  let seconds = 0;
+  let recHandler;
+  const setRecTime = () => {
+    seconds = 0
+    recording_time.text('0'.toHHMMSS())
+    recHandler = setInterval(() => {
+      seconds += 1
+      recording_time.text(seconds.toString().toHHMMSS())
+    }, 1000)
+  };
+
+  // UI: Uploading voice message
+  let recorder
+  let blob
+  voiceInput.on('click', async () => {
+    recording_bar.removeClass('none')
+    if (!recorder) recorder = await recordAudio()
+    recorder.start()
+    setRecTime()
+  }),
+  cancel_rec.on('click', async () => {
+    recording_bar.addClass('none')
+    if (!recorder) recorder = await recordAudio()
+    recorder.cancel()
+    clearInterval(recHandler)
+  }),
+  send_rec.on('click', async () => {
+    recording_bar.addClass('none')
+    blob = await recorder.stop()
+    const file = new File([blob.audioBlob], 'record.oga')
+    uploadAttachment(file, { name: 'voice' })
+    clearInterval(recHandler)
+  }),
+
   // UI: Uploading user avatar
   avatarInput.on('change', (e) => {
     e.target.files[0].size > 0 ? uploadAvatar(e.target.files[0]) : warning('Empty file', 'error')
@@ -324,7 +416,7 @@ $(document).ready(() => {
 
   // UI: Uploading message image
   imageInput.on('change', (e) => {
-    e.target.files[0].size > 0 ? uploadImage(e.target.files[0]) : warning('Empty file', 'error')
+    e.target.files[0].size > 0 ? uploadAttachment(e.target.files[0], { name: 'image' }) : warning('Empty file', 'error')
   }),
 
   // UI: Check username in localstorage
@@ -406,6 +498,7 @@ $(document).ready(() => {
   $(document).on('click', '.quote_btn', function() {
     const media = $(this).parent().find('.message_block_right').hasClass('media');
     const video = $(this).parent().find('.video').attr('src');
+    const audio = $(this).parent().find('.voice').attr('src');
     quote_form.addClass('active'),
     media ? (
       $('.quote_form .message_user').addClass('none'),
@@ -416,9 +509,12 @@ $(document).ready(() => {
     ),
     $('.quote_form .message_user').text($(this).parent().data('user')),
     $('.quote_form .quoteId').text($(this).parent().data('id')),
-    video && checkVideo(video) ? (
+    (video && checkVideo(video)) ? (
       $('.quote_form .message_user').removeClass('none'),
       $('.quote_form .message_text').removeClass('media').empty().text('Video')
+    ) : (audio && checkAudio(audio)) ? (
+      $('.quote_form .message_user').removeClass('none'),
+      $('.quote_form .message_text').removeClass('media').empty().text('Voice message')
     ) : $('.quote_form .message_text').html($(this).parent().find('.message_text').html().trim()),
     message.focus()
   }),
@@ -433,7 +529,6 @@ $(document).ready(() => {
 
   // UI: Output old messages from DB
   socket.on('output', (data) => {
-    console.table(data),
     (data.length > 0) ? (
       (data.length < limit) && socket.emit('get_more', { offset: offset += limit }),
       $('.empty-results').remove(),
@@ -594,7 +689,7 @@ $(document).ready(() => {
     socket.emit('delete', {
       username: $(this).parent().data('user'),
       id: $(this).parent().data('id'),
-      file: $(this).parent().find('.message_text img').data('url')
+      file: $(this).parent().find('.message_text .deleteble').data('url')
     })
   }),
   socket.on('delete', (data) => $(`.message_item[data-id="${data.id}"]`).remove()),

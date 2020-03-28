@@ -14,6 +14,7 @@
 - Ability to quote messages
 - Sending videos by url from internet
 - Browser notifications
+- Voice messages
 
 ## Install
 clone repo via git

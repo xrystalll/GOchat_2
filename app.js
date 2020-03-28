@@ -29,6 +29,13 @@ const checkFileType = (file, cb) => {
   if (mimetype && extname) return cb(null, true)
   else cb('Error: It\'s not image')
 }
+const checkAudioType = (file, cb) => {
+  const filetypes = /oga|wav|ogg/
+  const extname = filetypes.test(path.extname(file.originalname).toLowerCase())
+  const mimetype = filetypes.test(file.mimetype)
+  if (mimetype && extname) return cb(null, true)
+  else cb('Error: It\'s not audio')
+}
 const storage = (dest, name) => {
   return multer.diskStorage({
     destination: path.join(__dirname, 'public', 'uploads', dest),
@@ -49,6 +56,12 @@ const uploadImage = multer({
   limits: { fileSize: 1048576 * conf.maxsize * 2 },
   fileFilter: (req, file, cb) => checkFileType(file, cb)
 }).single('image')
+
+const uploadVoice = multer({
+  storage: storage('attachments', 'voice'),
+  limits: { fileSize: 1048576 * conf.maxsize * 4 },
+  fileFilter: (req, file, cb) => checkAudioType(file, cb)
+}).single('voice')
 
 const typings = []
 
@@ -88,11 +101,29 @@ app.post('/upload/image', (req, res) => {
   })
 })
 
+app.post('/upload/voice', (req, res) => {
+  uploadVoice(req, res, (err) => {
+    req.file
+      ? (
+        fs.readFile(req.file.path, (err, data) => {
+          if (err) return
+          fs.writeFileSync(req.file.path, data)
+        }),
+        res.json({ image: './rec/voice/' + req.file.filename })
+      )
+      : res.status(500).json({ error: err })
+  })
+})
+
 app.get('/img/users/:file', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'uploads', 'avatars', req.params.file))
 })
 
 app.get('/img/attachments/:file', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'uploads', 'attachments', req.params.file))
+})
+
+app.get('/rec/voice/:file', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'uploads', 'attachments', req.params.file))
 })
 
