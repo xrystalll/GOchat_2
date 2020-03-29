@@ -29,13 +29,6 @@ const checkFileType = (file, cb) => {
   if (mimetype && extname) return cb(null, true)
   else cb('Error: It\'s not image')
 }
-const checkAudioType = (file, cb) => {
-  const filetypes = /oga|wav|ogg/
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase())
-  const mimetype = filetypes.test(file.mimetype)
-  if (mimetype && extname) return cb(null, true)
-  else cb('Error: It\'s not audio')
-}
 const storage = (dest, name) => {
   return multer.diskStorage({
     destination: path.join(__dirname, 'public', 'uploads', dest),
@@ -59,8 +52,7 @@ const uploadImage = multer({
 
 const uploadVoice = multer({
   storage: storage('attachments', 'voice'),
-  limits: { fileSize: 1048576 * conf.maxsize * 4 },
-  fileFilter: (req, file, cb) => checkAudioType(file, cb)
+  limits: { fileSize: 1048576 * conf.maxsize * 4 }
 }).single('voice')
 
 const typings = []
@@ -124,6 +116,8 @@ app.get('/img/attachments/:file', (req, res) => {
 })
 
 app.get('/rec/voice/:file', (req, res) => {
+  res.set('content-type', 'audio/webm')
+  res.set('accept-ranges', 'bytes')
   res.sendFile(path.join(__dirname, 'public', 'uploads', 'attachments', req.params.file))
 })
 

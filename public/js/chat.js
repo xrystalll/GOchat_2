@@ -24,6 +24,10 @@ $(document).ready(() => {
   let typings = [];
   let USER = localStorage.getItem('username');
 
+  const player = new Audio;
+  const list = [];
+  let index = 0;
+
   const warning = (message, type = 'info') => {
     const id = Math.random().toString(36).substr(2, 8);
     $('body').append(`<div class="alert ${type}" data-id="${id}">${message}</div>`),
@@ -106,7 +110,7 @@ $(document).ready(() => {
           <div class="message_block_left">
             ${data.photo
               ? `<div class="message_avatar${!data.my ? ` answer" data-user="${data.user}` : ''}" ${data.photo ? ` style="background-image: url('./img/users/${data.photo}');"` : ''}></div>`
-              : `<div class="message_avatar answer${!data.my ? ` answer" data-user="${data.user}` : ''}">${data.user ? data.user.slice(0, 1) : ''}</div>`
+              : `<div class="message_avatar${!data.my ? ` answer" data-user="${data.user}` : ''}">${data.user ? data.user.slice(0, 1) : ''}</div>`
             }
           </div>
 
@@ -165,7 +169,21 @@ $(document).ready(() => {
     },
     voice: (url) => {
       return `
-        <audio class="voice deleteble" data-url="${url.substring(url.lastIndexOf('/') + 1)}" src="${extractLink(url)}" controls></audio>
+        <div class="audio">
+          <div class="audio-side">
+            <div class="audio-btn">
+              <div class="control" data-src="${extractLink(url)}" data-url="${url.substring(url.lastIndexOf('/') + 1)}"></div>
+            </div>
+          </div>
+          <div class="audio-wave">
+            <div class="bar">
+                <div class="progress"></div>
+            </div>
+          </div>
+          <div class="audio-time">
+              <span class="duration">0:00</span>
+          </div>
+        </div>
       `;
     },
     error: (message) => {
@@ -317,7 +335,7 @@ $(document).ready(() => {
     if (data === undefined || !data.message) return false
     const title = (data.title === null) ? 'Notification' : data.title
     const message = (data.message === null) ? 'Empty message' : data.message
-    const icon = (data.icon === null) ? window.location.href +'/images/icon_192.png' : data.icon
+    const icon = (data.icon === null) ? window.location.href +'images/icon_192.png' : data.icon
     const image = (data.image === null) ? undefined : data.image
     const sendNotification = () => {
       const notification = new Notification(title, {
@@ -344,7 +362,8 @@ $(document).ready(() => {
   };
 
   // Handler: Recording voice message
-  const recordAudio = () => new Promise(async resolve => {
+  const recordAudio = () => new Promise(async (resolve, reject) => {
+    if (navigator.mediaDevices === undefined) return reject('Error get usermedia: undefined')
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     const mediaRecorder = new MediaRecorder(stream)
     let audioChunks = []
@@ -388,25 +407,39 @@ $(document).ready(() => {
 
   // UI: Uploading voice message
   let recorder
-  let blob
   voiceInput.on('click', async () => {
     recording_bar.removeClass('none')
-    if (!recorder) recorder = await recordAudio()
-    recorder.start()
-    setRecTime()
+    try {
+      if (!recorder) recorder = await recordAudio()
+      recorder.start(),
+      setRecTime()
+    } catch (e) {
+      console.error(e),
+      recording_bar.addClass('none'),
+      warning('Unable to access microphone', 'error')
+    }
   }),
   cancel_rec.on('click', async () => {
     recording_bar.addClass('none')
-    if (!recorder) recorder = await recordAudio()
-    recorder.cancel()
-    clearInterval(recHandler)
+    try {
+      if (!recorder) recorder = await recordAudio()
+      recorder.cancel(),
+      clearInterval(recHandler)
+    } catch (e) {
+      console.error(e)
+    }
   }),
   send_rec.on('click', async () => {
     recording_bar.addClass('none')
-    blob = await recorder.stop()
-    const file = new File([blob.audioBlob], 'record.oga')
-    uploadAttachment(file, { name: 'voice' })
-    clearInterval(recHandler)
+    try {
+      if (!recorder) recorder = await recordAudio()
+      const blob = await recorder.stop()
+      const file = new File([blob.audioBlob], 'record.oga')
+      uploadAttachment(file, { name: 'voice' }),
+      clearInterval(recHandler)
+    } catch (e) {
+      console.error(e)
+    }
   }),
 
   // UI: Uploading user avatar
@@ -552,8 +585,10 @@ $(document).ready(() => {
             url: data[i].message.match(/(https?:\/\/[^\s]+)/g)[0],
             id: data[i]._id
           }),
-          data[i].quote && quoteInit(data[i])
-        })
+          data[i].quote && quoteInit(data[i]),
+          checkAudio(data[i].message) && list.push(data[i].message)
+        }),
+        list.sort()
       ),
       $('html, body').animate({ scrollTop: $(document).height() }, 0)
     ) : chat.html(template.error('No messages yet'))
@@ -603,7 +638,11 @@ $(document).ready(() => {
       url: data.message.match(/(https?:\/\/[^\s]+)/g)[0],
       id: data._id
     }),
-    data.quote && quoteInit(data)
+    data.quote && quoteInit(data),
+    checkAudio(data.message) && (
+      list.push(data.message),
+      list.sort()
+    )
   }),
 
   // UI: Load more old messages from DB
@@ -634,9 +673,11 @@ $(document).ready(() => {
             url: data[i].message.match(/(https?:\/\/[^\s]+)/g)[0],
             id: data[i]._id
           }),
-          data[i].quote && quoteInit(data[i])
+          data[i].quote && quoteInit(data[i]),
+          checkAudio(data[i].message) && list.push(data[i].message)
         }),
-        window.scrollTo(0, position)
+        window.scrollTo(0, position),
+        list.sort()
       )
     ) : end = true
   }),
@@ -701,5 +742,94 @@ $(document).ready(() => {
   }),
 
 
-  socket.on('alert', (data) => warning(data.message, data.type))
+  socket.on('alert', (data) => warning(data.message, data.type));
+
+
+  const playPause = (index, initial = index) => {
+    const curSrc = player.currentSrc.replace(/.+[\\\/]/, '');
+    const dataSrc = encodeURI($('.audio').eq(index).find('.control').data('src').replace(/.+[\\\/]/, ''));
+
+    initial === index ? (
+      player.paused ? (
+        curSrc === dataSrc ? (
+          player.play()
+        ) : (
+          player.src = list[index],
+          player.play()
+            .then(() => meta(
+              $('.audio').eq(index).parents('.message_block_right').find('.message_user').text()
+            ))
+        )
+      ) : player.pause()
+    ) : (
+      player.src = list[index],
+      player.play()
+        .then(() => meta(
+          $('.audio').eq(index).parents('.message_block_right').find('.message_user').text()
+        ))
+    )
+  };
+
+  const next = () => {
+    index = (index + 1);
+    if (index > list.length - 1) {
+      player.pause()
+      return
+    }
+    player.src = list[index];
+    player.play()
+      .then(() => meta(
+        $('.audio').eq(index).parents('.message_block_right').find('.message_user').text()
+      )),
+    $('.audio').not('playing').removeClass('playing')
+  };
+
+  const meta = (title) => {
+    let cover;
+    cover = $('.audio').eq(index).parents('.message_item').find('.message_avatar')
+      .css('background-image').replace(/^url\(['"](.+)['"]\)/, '$1'),
+    cover === 'none' && (
+      cover = window.location.href + 'images/icon_192.png'
+    ),
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title,
+      artist: 'Voice message',
+      artwork: [{ src: cover }]
+    })
+  };
+
+  $(document).on('click', '.audio-btn', function() {
+    let initial = index;
+    index = $('.audio-btn').index(this),
+    playPause(index, initial)
+  }),
+
+  player.onended = () => next(),
+
+  player.addEventListener('pause', () => {
+    $('.audio').removeClass('playing')
+  }),
+
+  player.addEventListener('play', () => {
+    $('.audio').removeClass('playing'),
+    $('.audio').eq(index).addClass('playing')
+  }),
+
+  player.addEventListener('timeupdate', () => {
+    const curTime = player.currentTime;
+    const duration = player.duration;
+    $('.playing .duration').text(curTime.toString().toHHMMSS())
+    $('.playing .progress').stop(true, true).animate({
+      'width': `${(curTime + .25) / duration * 100}%`
+    }, 200, 'linear')
+  }),
+
+  $(document).on('click', '.playing .bar', function(e) {
+    const offset = e.pageX - $(this).offset().left;
+    const duration = player.duration;
+    const width = $(this).width();
+    duration && (
+      player.currentTime = (offset / width) * duration
+    )
+  })
 });
