@@ -116,8 +116,8 @@ app.get('/img/attachments/:file', (req, res) => {
 })
 
 app.get('/rec/voice/:file', (req, res) => {
-  res.set('content-type', 'audio/webm')
-  res.set('accept-ranges', 'bytes')
+  res.set('Content-Type', 'audio/ogg')
+  res.set('Accept-Ranges', 'bytes')
   res.sendFile(path.join(__dirname, 'public', 'uploads', 'attachments', req.params.file))
 })
 
@@ -173,6 +173,10 @@ io.on('connection', (socket) => {
   socket.on('typing', (data) => {
     if (data.username && typings.indexOf(data.username) === -1) typings.push(data.username)
     socket.broadcast.emit('typing', { typings })
+  })
+
+  socket.on('recording', (data) => {
+    socket.broadcast.emit('recording', data)
   })
 
   socket.on('stop_typing', (data) => {

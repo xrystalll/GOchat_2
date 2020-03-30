@@ -679,15 +679,10 @@ header {
   content: 'pause';
 }
 .audio-wave {
+  width: 140px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-.audio-wave .wave-placeholder {
-  background: var(--accent-color);
-  width: 100px;
-  height: 12px;
-  display: flex;
 }
 .audio-time {
   margin-left: 8px;
@@ -698,6 +693,10 @@ header {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+wave {
+  overflow: hidden !important;
+  cursor: pointer;
 }
 .bar {
   width: 140px;

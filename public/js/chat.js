@@ -172,14 +172,10 @@ $(document).ready(() => {
         <div class="audio">
           <div class="audio-side">
             <div class="audio-btn">
-              <div class="control" data-src="${extractLink(url)}" data-url="${url.substring(url.lastIndexOf('/') + 1)}"></div>
+              <div class="control deleteble" data-src="${extractLink(url)}" data-url="${url.substring(url.lastIndexOf('/') + 1)}"></div>
             </div>
           </div>
-          <div class="audio-wave">
-            <div class="bar">
-                <div class="progress"></div>
-            </div>
-          </div>
+          <div class="audio-wave wave_${url.substring(url.lastIndexOf('/') + 1).replace('.oga', '')}"></div>
           <div class="audio-time">
               <span class="duration">0:00</span>
           </div>
@@ -379,7 +375,7 @@ $(document).ready(() => {
 
     const stop = () => new Promise(resolve => {
       mediaRecorder.addEventListener('stop', () => {
-        const audioBlob = new Blob(audioChunks)
+        const audioBlob = new Blob(audioChunks, { type: 'audio/ogg' })
         resolve({ audioBlob })
       })
       mediaRecorder.stop()
@@ -392,6 +388,22 @@ $(document).ready(() => {
 
     resolve({ start, stop, cancel })
   });
+
+  // Handler: Init waveform
+  const initWave = (url) => {
+    WaveSurfer.create({
+      container: document.querySelector('.wave_' + url.substring(url.lastIndexOf('/') + 1).replace('.oga', '')),
+      waveColor: '#405267',
+      progressColor: '#5d80a6',
+      barWidth: 3,
+      barHeight: 2,
+      barRadius: 3,
+      cursorWidth: 0,
+      height: 30,
+      normalize: true,
+      pixelRatio: 2
+    }).load(url)
+  };
 
   // Handler: Recording timer
   let seconds = 0;
@@ -412,15 +424,18 @@ $(document).ready(() => {
     try {
       if (!recorder) recorder = await recordAudio()
       recorder.start(),
+      socket.emit('recording', { username: USER }),
       setRecTime()
     } catch (e) {
       console.error(e),
       recording_bar.addClass('none'),
+      socket.emit('stop_typing', { username: USER }),
       warning('Unable to access microphone', 'error')
     }
   }),
   cancel_rec.on('click', async () => {
-    recording_bar.addClass('none')
+    recording_bar.addClass('none'),
+    socket.emit('stop_typing', { username: USER })
     try {
       if (!recorder) recorder = await recordAudio()
       recorder.cancel(),
@@ -430,7 +445,8 @@ $(document).ready(() => {
     }
   }),
   send_rec.on('click', async () => {
-    recording_bar.addClass('none')
+    recording_bar.addClass('none'),
+    socket.emit('stop_typing', { username: USER })
     try {
       if (!recorder) recorder = await recordAudio()
       const blob = await recorder.stop()
@@ -523,8 +539,14 @@ $(document).ready(() => {
 
   // UI: Toggle visible sending button
   message.on('keyup', () => {
-    (message.val().trim().length > 1) && message_form.addClass('typed'),
-    (message.val().trim().length < 2) && message_form.removeClass('typed')
+    (message.val().trim().length > 1) && (
+      message_form.addClass('typed'),
+      attachment.addClass('none')
+    ),
+    (message.val().trim().length < 2) && (
+      message_form.removeClass('typed'),
+      attachment.removeClass('none')
+    )
   }),
 
   // UI: Itit quote form
@@ -586,7 +608,10 @@ $(document).ready(() => {
             id: data[i]._id
           }),
           data[i].quote && quoteInit(data[i]),
-          checkAudio(data[i].message) && list.push(data[i].message)
+          checkAudio(data[i].message) && (
+            list.push(data[i].message),
+            initWave(data[i].message)
+          )
         }),
         list.sort()
       ),
@@ -641,7 +666,8 @@ $(document).ready(() => {
     data.quote && quoteInit(data),
     checkAudio(data.message) && (
       list.push(data.message),
-      list.sort()
+      list.sort(),
+      initWave(data.message)
     )
   }),
 
@@ -674,7 +700,10 @@ $(document).ready(() => {
             id: data[i]._id
           }),
           data[i].quote && quoteInit(data[i]),
-          checkAudio(data[i].message) && list.push(data[i].message)
+          checkAudio(data[i].message) && (
+            list.push(data[i].message),
+            initWave(data[i].message)
+          )
         }),
         window.scrollTo(0, position),
         list.sort()
@@ -712,6 +741,9 @@ $(document).ready(() => {
     status.addClass('typing').text(typers)
   }),
 
+  socket.on('recording', (data) => {
+    status.addClass('typing').text(`${data.username} recording a audio message...`)
+  }),
 
   message.focusout(() => {
     if (message.val().length < 2) return
@@ -819,12 +851,10 @@ $(document).ready(() => {
     const curTime = player.currentTime;
     const duration = player.duration;
     $('.playing .duration').text(curTime.toString().toHHMMSS())
-    $('.playing .progress').stop(true, true).animate({
-      'width': `${(curTime + .25) / duration * 100}%`
-    }, 200, 'linear')
+    $('.playing').find('wave').eq(1).css('width', `${(curTime + .25) / duration * 100}%`);
   }),
 
-  $(document).on('click', '.playing .bar', function(e) {
+  $(document).on('click', '.playing wave', function(e) {
     const offset = e.pageX - $(this).offset().left;
     const duration = player.duration;
     const width = $(this).width();
