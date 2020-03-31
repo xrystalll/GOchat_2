@@ -1,93 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>GOchat 2</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#1C2733">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="GOchat">
-    <link rel="icon" href="/images/icon_144.png">
-    <link rel="apple-touch-icon" href="/images/icon_192.png">
-    <link href="manifest.json" rel="manifest">
-    <link href="css/style.css" rel="stylesheet">
-    <link href="css/fancybox.min.css" rel="stylesheet">
+  <meta charset="utf-8">
+  <title>GOchat 2</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1C2733">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="GOchat">
+  <link rel="icon" href="/images/icon_144.png">
+  <link rel="apple-touch-icon" href="/images/icon_192.png">
+  <link href="manifest.json" rel="manifest">
+  <link href="css/style.css" rel="stylesheet">
+  <link href="css/fancybox.min.css" rel="stylesheet">
 </head>
 <body>
-    <header>
-        <ul class="head_inner">
-            <li class="head_item">
-                <i class="material-icons">forum</i>
-            </li>
-            <li class="head_title">
-                <h1>GOchat</h1>
-                <div id="status"></div>
-            </li>
-            <li class="head_item notif_setting on" title="Browser notifications"></li>
-        </ul>
-    </header>
+  <header>
+    <ul class="head_inner">
+      <li class="head_item">
+        <i class="material-icons">forum</i>
+      </li>
+      <li class="head_title">
+        <h1>
+          <span>GOchat</span>
+          <span class="online none">Online:<b class="online_count">0</b></span>
+        </h1>
+        <div id="status"></div>
+      </li>
+      <li class="head_item notif_setting on none" title="Browser notifications"></li>
+    </ul>
+  </header>
 
-    <noscript>
-        <div class="empty-results">
-            <svg xmlns="http://www.w3.org/2000/svg" width="112" height="112" viewBox="0 0 24 24">
-              <path d="M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" fill="#8e9399"/></path>
-            </svg>
-            <div class="empty_words">
-                <div class="empty_top">You need to enable JavaScript to run this app.</div>
-            </div>
-        </div>
-    </noscript>
-    <section id="chat"></section>
-
-    <div class="quote_form">
-        <div class="cancel_quote">
-            <i class="material-icons">close</i>
-        </div>
-
-        <div class="quote_main">
-            <div class="quote">
-                <div class="message_user"></div>
-                <div class="message_text"></div>
-                <div class="quoteId none"></div>
-            </div>
-        </div>
+  <noscript>
+    <div class="empty-results">
+      <svg xmlns="http://www.w3.org/2000/svg" width="112" height="112" viewBox="0 0 24 24">
+        <path d="M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" fill="#8e9399"/>
+      </svg>
+      <div class="empty_words">
+        <div class="empty_top">You need to enable JavaScript to run this app.</div>
+      </div>
     </div>
-    <div class="message_form">
-        <input type="file" id="avatarInput" accept="image/*" class="none">
-        <input type="text" id="nameInput" placeholder="Name">
-        <div class="input_bar">
-            <input type="text" id="textInput" placeholder="Enter a message...">
-            <label for="imageInput" class="attachment image none" title="Send image">
-                <i class="material-icons">image</i>
-            </label>
-            <input type="file" id="imageInput" accept="image/*" class="none">
-            <span id="voiceInput" class="attachment record none" title="Record voice message">
-                <i class="material-icons">mic</i>
-            </span>
-        </div>
-        <div class="recording_bar none">
-            <div class="rec_indicator">
-                <div class="recording_time">0:00</div>
-                <div class="pulse_rec"></div>
-            </div>
-            <div class="recording_actions">
-                <span class="cancel_rec" title="Cancel recording">
-                    <i class="material-icons">close</i>
-                </span>
-                <span class="send_rec" title="Send voice message">
-                    <i class="material-icons">send</i>
-                </span>
-            </div>
-        </div>
-        <span id="send_message" class="write">
-            <i class="material-icons">send</i>
+  </noscript>
+  <div id="chat"></div>
+
+  <div class="quote_form">
+    <div class="cancel_quote">
+      <i class="material-icons">close</i>
+    </div>
+
+    <div class="quote_main">
+      <div class="quote">
+        <div class="message_user"></div>
+        <div class="message_text"></div>
+        <div class="quoteId none"></div>
+      </div>
+    </div>
+  </div>
+  <div class="message_form">
+    <input type="file" id="avatarInput" accept="image/*" class="none">
+    <input type="text" id="nameInput" placeholder="Name">
+    <div class="input_bar">
+      <input type="text" id="textInput" placeholder="Enter a message...">
+      <label for="imageInput" class="attachment image none" title="Send image">
+        <i class="material-icons">image</i>
+      </label>
+      <input type="file" id="imageInput" accept="image/*" class="none">
+      <span id="voiceInput" class="attachment record none" title="Record voice message">
+        <i class="material-icons">mic</i>
+      </span>
+    </div>
+    <div class="recording_bar none">
+      <div class="rec_indicator">
+        <div class="recording_time">0:00</div>
+        <div class="pulse_rec"></div>
+      </div>
+      <div class="recording_actions">
+        <span class="cancel_rec" title="Cancel recording">Cancel</span>
+        <span class="send_rec" title="Send voice message">
+          <i class="material-icons">send</i>
         </span>
+      </div>
     </div>
+    <span id="send_message" class="write">
+      <i class="material-icons">send</i>
+    </span>
+  </div>
 
-    <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://unpkg.com/wavesurfer.js"></script>
-    <script src="js/chat.js"></script>
-    <script src="js/fancybox.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/wavesurfer.js"></script>
+  <script src="js/OpusMediaRecorder/OpusMediaRecorder.umd.js"></script>
+  <script src="js/OpusMediaRecorder/encoderWorker.umd.js"></script>
+  <script src="js/chat.js"></script>
+  <script src="js/fancybox.min.js"></script>
 </body>
 </html>

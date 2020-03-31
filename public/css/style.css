@@ -145,17 +145,33 @@ header {
 .head_title {
   list-style: none;
   height: 56px;
-  margin-left: 14px;
+  margin-left: 4px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
   color: var(--main-text-color);
+  max-width: calc(100% - 116px);
   cursor: default;
 }
 .head_title h1 {
   font-size: 20px;
   font-weight: 400;
+  display: flex;
+  align-items: center;
+}
+.head_title .online {
+  width: initial;
+  max-width: 102px;
+  font-size: 14px;
+  margin-left: 12px;
+  color: var(--main-control-tint);
+}
+.online_count {
+  margin-left: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #status {
@@ -163,6 +179,10 @@ header {
   font-style: italic;
   color: var(--secondary-color);
   display: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 #status.typing {
   display: block;
@@ -295,7 +315,7 @@ header {
   align-items: center;
   padding: 8px;
   margin-left: 2px;
-  border-radius: 50%;
+  border-radius: 50px;
   cursor: pointer;
   transition: all .1s ease-in;
 }
@@ -305,6 +325,10 @@ header {
 .recording_actions span i {
   color: var(--main-text-color);
   font-size: 22px;
+}
+.cancel_rec {
+  text-transform: uppercase;
+  margin-right: 16px;
 }
 .rec_indicator {
   display: flex;
@@ -431,6 +455,7 @@ header {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 234px;
   color: var(--main-control-tint);
 }
 .message_text, .message_quote_text {
@@ -679,10 +704,14 @@ header {
   content: 'pause';
 }
 .audio-wave {
-  width: 140px;
+  width: 153px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+wave {
+  overflow: hidden !important;
+  cursor: pointer;
 }
 .audio-time {
   margin-left: 8px;
@@ -693,22 +722,4 @@ header {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-wave {
-  overflow: hidden !important;
-  cursor: pointer;
-}
-.bar {
-  width: 140px;
-  overflow: hidden;
-  background: var(--default-transparent-02);
-  height: 3px;
-  border-radius: 2px;
-  cursor: pointer;
-}
-.progress {
-  width: 0;
-  background: var(--accent-color);
-  border-radius: 2px;
-  height: 3px;
 }

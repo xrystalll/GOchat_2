@@ -3,6 +3,7 @@
 
 ## Features
 - Real-time messages
+- Users online counter
 - Typing indicator
 - Uploading user avatar
 - Uploading and sending images from devices

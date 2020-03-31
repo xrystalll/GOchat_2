@@ -10,6 +10,7 @@ const server = require('http').createServer(app)
 const hpp = require('hpp')
 const helmet = require('helmet')
 const xssFilter = require('x-xss-protection')
+const xss = require('xss')
 
 const Mongoose = require('mongoose')
 require(path.join(__dirname, 'modules', 'DB'))
@@ -55,6 +56,7 @@ const uploadVoice = multer({
   limits: { fileSize: 1048576 * conf.maxsize * 4 }
 }).single('voice')
 
+const online = []
 const typings = []
 
 server.listen(process.env.PORT || conf.port)
@@ -136,6 +138,7 @@ app.get('/message', (req, res) => {
 io.on('connection', (socket) => {
   console.log('New user connected')
   socket.username = 'Anonim'
+  io.emit('online', { online })
 
   MessageDB.find().sort({ time: -1 }).skip(0).limit(10)
     .then(data => socket.emit('output', data))
@@ -147,21 +150,25 @@ io.on('connection', (socket) => {
       .catch(err => console.error('Messages not displayed: ', err))
   })
 
-  socket.on('set_username', (data) => socket.username = data.username)
+  socket.on('set_username', (data) => {
+    socket.username = xss(data.username)
+    online.push(xss(data.username))
+    io.emit('online', { online })
+  })
 
   socket.on('set_userphoto', (data) => {
-    socket.userphoto = data.userphoto
+    socket.userphoto = xss(data.userphoto)
     io.emit('change_photo', {
-      image: data.userphoto,
-      username: data.username
+      image: xss(data.userphoto),
+      username: xss(data.username)
     })
   })
 
   socket.on('new_message', (data) => {
     const msg = {
-      message: data.message.replace(/(<([^>]+)>)/ig, ''),
-      username: data.username,
-      userphoto: data.userphoto,
+      message: xss(data.message.replace(/(<([^>]+)>)/ig, '')),
+      username: xss(data.username),
+      userphoto: xss(data.userphoto),
       time: data.time,
       quote: data.quoteId
     }
@@ -171,7 +178,7 @@ io.on('connection', (socket) => {
   })
 
   socket.on('typing', (data) => {
-    if (data.username && typings.indexOf(data.username) === -1) typings.push(data.username)
+    if (data.username && typings.indexOf(data.username) === -1) typings.push(xss(data.username))
     socket.broadcast.emit('typing', { typings })
   })
 
@@ -182,7 +189,7 @@ io.on('connection', (socket) => {
   socket.on('stop_typing', (data) => {
     const index = typings.indexOf(data.username)
     index > -1 && typings.splice(index, 1)
-    io.emit('stop_typing', { typings, username: data.username })
+    io.emit('stop_typing', { typings, username: xss(data.username) })
   })
 
   socket.on('delete', (data) => {
@@ -230,9 +237,14 @@ io.on('connection', (socket) => {
   })
 
   socket.on('disconnect', () => {
-    const index = typings.indexOf(socket.username)
-    index > -1 && typings.splice(index, 1)
-    socket.broadcast.emit('stop_typing', { typings, username: socket.username })
+    const indexTyper = typings.indexOf(socket.username)
+    indexTyper > -1 && typings.splice(indexTyper, 1)
+    socket.broadcast.emit('stop_typing', { typings, username: xss(socket.username) })
+
+    const indexOnline = online.indexOf(socket.username)
+    indexOnline > -1 && online.splice(indexOnline, 1)
+    io.emit('online', { online })
+
     console.log('User disconnected')
   })
 })

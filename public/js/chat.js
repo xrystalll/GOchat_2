@@ -1,31 +1,39 @@
 $(document).ready(() => {
   const socket = io();
 
-  const username = $('#nameInput');
-  const message = $('#textInput');
-  const send_message = $('#send_message');
-  const chat = $('#chat');
-  const message_form = $('.message_form');
-  const status = $('#status');
-  const avatarInput = $('#avatarInput');
-  const imageInput = $('#imageInput');
-  const voiceInput = $('#voiceInput');
-  const attachment = $('.attachment');
-  const recording_bar = $('.recording_bar');
-  const recording_time = $('.recording_time');
-  const cancel_rec = $('.cancel_rec');
-  const send_rec = $('.send_rec');
-  const quote_form = $('.quote_form');
-  const cancel_quote = $('.cancel_quote');
-  const notif_setting = $('.notif_setting');
+  const Username = $('#nameInput');
+  const Message = $('#textInput');
+  const SendMessage = $('#send_message');
+  const Chat = $('#chat');
+  const MessageForm = $('.message_form');
+  const Status = $('#status');
+  const AvatarInput = $('#avatarInput');
+  const ImageInput = $('#imageInput');
+  const VoiceInput = $('#voiceInput');
+  const Attachment = $('.attachment');
+  const RecordingBar = $('.recording_bar');
+  const RecordingTime = $('.recording_time');
+  const CancelRec = $('.cancel_rec');
+  const SendRec = $('.send_rec');
+  const QuoteForm = $('.quote_form');
+  const CancelQuote = $('.cancel_quote');
+  const NotifSetting = $('.notif_setting');
+  const Online = $('.online');
+  const OnlineCount = $('.online_count');
   const limit = 10;
   let offset = 0;
   let end = false;
   let typings = [];
   let USER = localStorage.getItem('username');
+  if (USER !== null) {
+    USER = USER.replace(/(<([^>]+)>)/ig, '').trim(),
+    (USER.length > 24) && (
+      USER = USER.substr(0, 24)
+    )
+  };
 
   const player = new Audio;
-  const list = [];
+  const voiceList = [];
   let index = 0;
 
   const warning = (message, type = 'info') => {
@@ -91,16 +99,24 @@ $(document).ready(() => {
     return matches[0]
   };
 
-  String.prototype.toHHMMSS = function() {
-    const sec_num = parseInt(this, 10)
-    let hours = Math.floor(sec_num / 3600)
-    let minutes = Math.floor((sec_num - (hours * 3600)) / 60)
-    let seconds = sec_num - (hours * 3600) - (minutes * 60)
+  const toHHMMSS = (sec) => {
+    const secNum = parseInt(sec, 10)
+    let hours = Math.floor(secNum / 3600)
+    let minutes = Math.floor((secNum - (hours * 3600)) / 60)
+    let seconds = secNum - (hours * 3600) - (minutes * 60)
 
     if (hours > 0) { hours = hours + ':' }
     if (seconds < 10) { seconds = '0' + seconds }
 
     return hours + minutes + ':' + seconds
+  };
+
+  const counter = (count) => {
+    if (count === 0) return '';
+    if (count < 1e3) return count;
+    if (count >= 1e3 && count < 1e6) return `${+(count / 1e3).toFixed(1)}K`;
+    if (count >= 1e6 && count < 1e9) return `${+(count / 1e6).toFixed(1)}M`;
+    if (count >= 1e9 && count < 1e12) return `${+(count / 1e9).toFixed(1)}B`;
   };
 
   const template = {
@@ -162,7 +178,7 @@ $(document).ready(() => {
               </a>
             </div>`
             : '<div class="message_quote_text">Video</div>'
-            : template.voice(data.message)
+            : '<div class="message_quote_text">Voice message</div>'
           }
         </div>
       `;
@@ -185,17 +201,17 @@ $(document).ready(() => {
     error: (message) => {
       return `
         <div class="empty-results">
-          ${template.ic_info('#8e9399', 112)}
+          ${template.icInfo('#8e9399', 112)}
           <div class="empty_words">
             <div class="empty_top">${message}</div>
           </div>
         </div>
       `;
     },
-    ic_info: (color = '#fff', size = 24) => {
+    icInfo: (color = '#fff', size = 24) => {
       return `
         <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
-          <path d="M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" fill="${color}"/></path>
+          <path d="M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" fill="${color}"/>
         </svg>
       `;
     },
@@ -206,28 +222,32 @@ $(document).ready(() => {
 
   // Handler: Write new message
   const write = (text, quoteId = null) => {
-    let user = USER || username.val().replace(/(<([^>]+)>)/ig, '').trim();
+    let user = USER || Username.val().replace(/(<([^>]+)>)/ig, '').trim();
     const photo = localStorage.getItem('userphoto') || null;
 
     USER ? (
       user = USER
     ) : (
       (user.length > 3) && (
-        user = username.val().replace(/(<([^>]+)>)/ig, '').trim(),
+        (user.length > 24) && (
+          user = user.substr(0, 24)
+        ),
         localStorage.setItem('username', user),
         USER = localStorage.getItem('username'),
         socket.emit('set_username', { username: USER }),
-        username.remove(),
-        attachment.removeClass('none'),
-        message_form.prepend(
+        Username.remove(),
+        Attachment.removeClass('none'),
+        NotifSetting.removeClass('none'),
+        Online.removeClass('none'),
+        MessageForm.prepend(
           template.avatar(USER)
         )
       )
     );
 
     (user.length > 3) ? text ? (
-      message.val(''),
-      message_form.removeClass('typed'),
+      Message.val(''),
+      MessageForm.removeClass('typed'),
       socket.emit('stop_typing', { username: USER }),
       socket.emit('new_message', {
         message: text,
@@ -244,8 +264,8 @@ $(document).ready(() => {
 
   // Handler: Clear all messages
   const clear = (password) => {
-    message.val(''),
-    message_form.removeClass('typed'),
+    Message.val(''),
+    MessageForm.removeClass('typed'),
     password ? socket.emit('clear', { password }) : warning('Enter password', 'error')
   };
 
@@ -312,8 +332,8 @@ $(document).ready(() => {
     .then(response => response.json())
     .then(data => {
       let quoteId;
-      quote_form.hasClass('active') && (
-        quoteId = quote_form.find('.quoteId').text()
+      QuoteForm.hasClass('active') && (
+        quoteId = QuoteForm.find('.quoteId').text()
       ),
       write(data.image, quoteId)
     })
@@ -322,7 +342,7 @@ $(document).ready(() => {
 
   // Handler: Close quote form
   const cancelQuote = () => {
-    quote_form.removeClass('active'),
+    QuoteForm.removeClass('active'),
     $('.quote_form .message_user, .quote_form .message_text, .quote_form .quoteId').empty()
   };
 
@@ -331,7 +351,7 @@ $(document).ready(() => {
     if (data === undefined || !data.message) return false
     const title = (data.title === null) ? 'Notification' : data.title
     const message = (data.message === null) ? 'Empty message' : data.message
-    const icon = (data.icon === null) ? window.location.href +'images/icon_192.png' : data.icon
+    const icon = (data.icon === null) ? window.location.href + 'images/icon_192.png' : data.icon
     const image = (data.image === null) ? undefined : data.image
     const sendNotification = () => {
       const notification = new Notification(title, {
@@ -358,10 +378,16 @@ $(document).ready(() => {
   };
 
   // Handler: Recording voice message
+  const workerOptions = {
+    OggOpusEncoderWasmPath: window.location.href + 'js/OpusMediaRecorder/OggOpusEncoder.wasm'
+  };
+
+  window.MediaRecorder = OpusMediaRecorder;
+
   const recordAudio = () => new Promise(async (resolve, reject) => {
     if (navigator.mediaDevices === undefined) return reject('Error get usermedia: undefined')
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    const mediaRecorder = new MediaRecorder(stream)
+    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/ogg' }, workerOptions)
     let audioChunks = []
 
     mediaRecorder.addEventListener('dataavailable', (e) => {
@@ -399,7 +425,7 @@ $(document).ready(() => {
       barHeight: 2,
       barRadius: 3,
       cursorWidth: 0,
-      height: 30,
+      height: 32,
       normalize: true,
       pixelRatio: 2
     }).load(url)
@@ -410,17 +436,17 @@ $(document).ready(() => {
   let recHandler;
   const setRecTime = () => {
     seconds = 0
-    recording_time.text('0'.toHHMMSS())
+    RecordingTime.text(toHHMMSS(0))
     recHandler = setInterval(() => {
       seconds += 1
-      recording_time.text(seconds.toString().toHHMMSS())
+      RecordingTime.text(toHHMMSS(seconds))
     }, 1000)
   };
 
   // UI: Uploading voice message
   let recorder
-  voiceInput.on('click', async () => {
-    recording_bar.removeClass('none')
+  VoiceInput.on('click', async () => {
+    RecordingBar.removeClass('none')
     try {
       if (!recorder) recorder = await recordAudio()
       recorder.start(),
@@ -428,13 +454,13 @@ $(document).ready(() => {
       setRecTime()
     } catch (e) {
       console.error(e),
-      recording_bar.addClass('none'),
+      RecordingBar.addClass('none'),
       socket.emit('stop_typing', { username: USER }),
       warning('Unable to access microphone', 'error')
     }
   }),
-  cancel_rec.on('click', async () => {
-    recording_bar.addClass('none'),
+  CancelRec.on('click', async () => {
+    RecordingBar.addClass('none'),
     socket.emit('stop_typing', { username: USER })
     try {
       if (!recorder) recorder = await recordAudio()
@@ -444,8 +470,8 @@ $(document).ready(() => {
       console.error(e)
     }
   }),
-  send_rec.on('click', async () => {
-    recording_bar.addClass('none'),
+  SendRec.on('click', async () => {
+    RecordingBar.addClass('none'),
     socket.emit('stop_typing', { username: USER })
     try {
       if (!recorder) recorder = await recordAudio()
@@ -459,21 +485,23 @@ $(document).ready(() => {
   }),
 
   // UI: Uploading user avatar
-  avatarInput.on('change', (e) => {
+  AvatarInput.on('change', (e) => {
     e.target.files[0].size > 0 ? uploadAvatar(e.target.files[0]) : warning('Empty file', 'error')
   }),
 
   // UI: Uploading message image
-  imageInput.on('change', (e) => {
+  ImageInput.on('change', (e) => {
     e.target.files[0].size > 0 ? uploadAttachment(e.target.files[0], { name: 'image' }) : warning('Empty file', 'error')
   }),
 
   // UI: Check username in localstorage
   USER && (
     socket.emit('set_username', { username: USER }),
-    username.remove(),
-    attachment.removeClass('none'),
-    message_form.prepend(
+    Username.remove(),
+    Attachment.removeClass('none'),
+    NotifSetting.removeClass('none'),
+    Online.removeClass('none'),
+    MessageForm.prepend(
       template.avatar(USER)
     )
   ),
@@ -487,17 +515,17 @@ $(document).ready(() => {
   ),
 
   // UI: Send message via button
-  send_message.on('click', () => {
-    let text = message.val().replace(/(<([^>]+)>)/ig, '').trim();
+  SendMessage.on('click', () => {
+    let text = Message.val().replace(/(<([^>]+)>)/ig, '').trim();
     if (text.length > 1) {
       (text.length > 1500) && (
         text = text.substr(0, 1500)
       );
       const value = text.split(' ');
-      const quoteActive = quote_form.hasClass('active');
+      const quoteActive = QuoteForm.hasClass('active');
       let quoteId;
       quoteActive && (
-        quoteId = quote_form.find('.quoteId').text()
+        quoteId = QuoteForm.find('.quoteId').text()
       ),
       (value[0] === '/clear') ? clear(value[1]) : write(text, quoteId)
     } else warning('Enter message text', 'error')
@@ -505,16 +533,16 @@ $(document).ready(() => {
 
   // UI: Send message via ENTER key
   $(document).on('keyup', '#nameInput, #textInput', (e) => {
-    let text = message.val().replace(/(<([^>]+)>)/ig, '').trim();
+    let text = Message.val().replace(/(<([^>]+)>)/ig, '').trim();
     if (text.length > 1 && e.which === 13) {
       (text.length > 1500) && (
         text = text.substr(0, 1500)
       );
       const value = text.split(' ');
-      const quoteActive = quote_form.hasClass('active');
+      const quoteActive = QuoteForm.hasClass('active');
       let quoteId;
       quoteActive && (
-        quoteId = quote_form.find('.quoteId').text()
+        quoteId = QuoteForm.find('.quoteId').text()
       ),
       (value[0] === '/clear') ? clear(value[1]) : write(text, quoteId)
     }
@@ -522,30 +550,30 @@ $(document).ready(() => {
 
   // UI: Check notification settings in localstorage
   (localStorage.getItem('notifications') === 'disable') && (
-    notif_setting.removeClass('on').addClass('off')
+    NotifSetting.removeClass('on').addClass('off')
   ),
 
   // UI: Toggle notification icon and setting in localstorage
-  notif_setting.on('click', () => {
+  NotifSetting.on('click', () => {
     warning('Successfully saved', 'success')
     if (localStorage.getItem('notifications') !== 'disable') {
       localStorage.setItem('notifications', 'disable'),
-      notif_setting.removeClass('on').addClass('off')
+      NotifSetting.removeClass('on').addClass('off')
     } else {
       localStorage.setItem('notifications', 'enable'),
-      notif_setting.removeClass('off').addClass('on')
+      NotifSetting.removeClass('off').addClass('on')
     }
   }),
 
   // UI: Toggle visible sending button
-  message.on('keyup', () => {
-    (message.val().trim().length > 1) && (
-      message_form.addClass('typed'),
-      attachment.addClass('none')
+  Message.on('keyup', () => {
+    (Message.val().trim().length > 1) && (
+      MessageForm.addClass('typed'),
+      Attachment.addClass('none')
     ),
-    (message.val().trim().length < 2) && (
-      message_form.removeClass('typed'),
-      attachment.removeClass('none')
+    (Message.val().trim().length < 2) && (
+      MessageForm.removeClass('typed'),
+      Attachment.removeClass('none')
     )
   }),
 
@@ -553,8 +581,8 @@ $(document).ready(() => {
   $(document).on('click', '.quote_btn', function() {
     const media = $(this).parent().find('.message_block_right').hasClass('media');
     const video = $(this).parent().find('.video').attr('src');
-    const audio = $(this).parent().find('.voice').attr('src');
-    quote_form.addClass('active'),
+    const audio = $(this).parent().find('.control').data('src');
+    QuoteForm.addClass('active'),
     media ? (
       $('.quote_form .message_user').addClass('none'),
       $('.quote_form .message_text').addClass('media')
@@ -571,15 +599,15 @@ $(document).ready(() => {
       $('.quote_form .message_user').removeClass('none'),
       $('.quote_form .message_text').removeClass('media').empty().text('Voice message')
     ) : $('.quote_form .message_text').html($(this).parent().find('.message_text').html().trim()),
-    message.focus()
+    Message.focus()
   }),
 
   // UI: Close quote form
-  cancel_quote.on('click', cancelQuote),
+  CancelQuote.on('click', cancelQuote),
 
   // UI: Paste username to input
   $(document).on('click', '.answer', function() {
-    message.val('@' + $(this).data('user') + ' ').focus()
+    Message.val('@' + $(this).data('user') + ' ').focus()
   }),
 
   // UI: Output old messages from DB
@@ -591,7 +619,7 @@ $(document).ready(() => {
         $.each(data, (i) => {
           const type = checkImg(data[i].message) || checkVideo(data[i].message) ? 'media' : null;
           const my = data[i].username === USER;
-          chat.prepend(
+          Chat.prepend(
             template.message({
               id: data[i]._id,
               user: data[i].username,
@@ -609,14 +637,14 @@ $(document).ready(() => {
           }),
           data[i].quote && quoteInit(data[i]),
           checkAudio(data[i].message) && (
-            list.push(data[i].message),
+            voiceList.push(data[i].message),
             initWave(data[i].message)
           )
         }),
-        list.sort()
+        voiceList.sort()
       ),
       $('html, body').animate({ scrollTop: $(document).height() }, 0)
-    ) : chat.html(template.error('No messages yet'))
+    ) : Chat.html(template.error('No messages yet'))
   }),
 
   // UI: Adding new message
@@ -647,7 +675,7 @@ $(document).ready(() => {
       )
     ),
     $('.empty-results').remove(),
-    chat.append(
+    Chat.append(
       template.message({
         id: data._id,
         user: data.username,
@@ -665,8 +693,8 @@ $(document).ready(() => {
     }),
     data.quote && quoteInit(data),
     checkAudio(data.message) && (
-      list.push(data.message),
-      list.sort(),
+      voiceList.push(data.message),
+      voiceList.sort(),
       initWave(data.message)
     )
   }),
@@ -674,16 +702,16 @@ $(document).ready(() => {
   // UI: Load more old messages from DB
   socket.on('more', (data) => {
     let position = 0;
-    let one_h = 0;
+    let initH = 0;
     (data.length > 0) ? (
       $('.empty-results').remove(),
       (document.querySelector('#chat').children.length !== 0) && (
         $.each(data, (i) => {
           const type = checkImg(data[i].message) || checkVideo(data[i].message) ? 'media' : null;
           const my = data[i].username === USER;
-          one_h = $('.message_item').outerHeight(true),
-          position += one_h,
-          chat.prepend(
+          initH = $('.message_item').outerHeight(true),
+          position += initH,
+          Chat.prepend(
             template.message({
               id: data[i]._id,
               user: data[i].username,
@@ -701,12 +729,12 @@ $(document).ready(() => {
           }),
           data[i].quote && quoteInit(data[i]),
           checkAudio(data[i].message) && (
-            list.push(data[i].message),
+            voiceList.push(data[i].message),
             initWave(data[i].message)
           )
         }),
         window.scrollTo(0, position),
-        list.sort()
+        voiceList.sort()
       )
     ) : end = true
   }),
@@ -720,10 +748,10 @@ $(document).ready(() => {
   }),
 
 
-  message.on('keyup', () => {
-    if (message.val().length === 0) return
+  Message.on('keyup', () => {
+    if (Message.val().length === 0) return
 
-    (message.val().length > 1)
+    (Message.val().length > 1)
       ? socket.emit('typing', { username: USER })
       : socket.emit('stop_typing', { username: USER })
   }),
@@ -738,15 +766,15 @@ $(document).ready(() => {
     (typings.length < 3)
       ? typers = items.join(', ') + ' typing a message...'
       : typers = 'Several people are typing...',
-    status.addClass('typing').text(typers)
+    Status.addClass('typing').text(typers)
   }),
 
   socket.on('recording', (data) => {
-    status.addClass('typing').text(`${data.username} recording a audio message...`)
+    Status.addClass('typing').text(`${data.username} recording a audio message...`)
   }),
 
-  message.focusout(() => {
-    if (message.val().length < 2) return
+  Message.focusout(() => {
+    if (Message.val().length < 2) return
 
     socket.emit('stop_typing', { username: USER })
   }),
@@ -754,7 +782,12 @@ $(document).ready(() => {
 
   socket.on('stop_typing', (data) => {
     typings = data.typings
-    status.removeClass('typing').empty()
+    Status.removeClass('typing').empty()
+  }),
+
+
+  socket.on('online', (data) => {
+    OnlineCount.text(counter(data.online.length) || 0)
   }),
 
 
@@ -769,8 +802,8 @@ $(document).ready(() => {
 
 
   socket.on('cleared', () => {
-    status.removeClass('typing').empty(),
-    chat.empty().html(template.error('No messages yet'))
+    Status.removeClass('typing').empty(),
+    Chat.empty().html(template.error('No messages yet'))
   }),
 
 
@@ -786,7 +819,7 @@ $(document).ready(() => {
         curSrc === dataSrc ? (
           player.play()
         ) : (
-          player.src = list[index],
+          player.src = voiceList[index],
           player.play()
             .then(() => meta(
               $('.audio').eq(index).parents('.message_block_right').find('.message_user').text()
@@ -794,7 +827,7 @@ $(document).ready(() => {
         )
       ) : player.pause()
     ) : (
-      player.src = list[index],
+      player.src = voiceList[index],
       player.play()
         .then(() => meta(
           $('.audio').eq(index).parents('.message_block_right').find('.message_user').text()
@@ -804,11 +837,11 @@ $(document).ready(() => {
 
   const next = () => {
     index = (index + 1);
-    if (index > list.length - 1) {
+    if (index > voiceList.length - 1) {
       player.pause()
       return
     }
-    player.src = list[index];
+    player.src = voiceList[index];
     player.play()
       .then(() => meta(
         $('.audio').eq(index).parents('.message_block_right').find('.message_user').text()
@@ -850,8 +883,8 @@ $(document).ready(() => {
   player.addEventListener('timeupdate', () => {
     const curTime = player.currentTime;
     const duration = player.duration;
-    $('.playing .duration').text(curTime.toString().toHHMMSS())
-    $('.playing').find('wave').eq(1).css('width', `${(curTime + .25) / duration * 100}%`);
+    $('.playing .duration').text(toHHMMSS(curTime)),
+    $('.playing').find('wave').eq(1).css('width', `${(curTime + .25) / duration * 100}%`)
   }),
 
   $(document).on('click', '.playing wave', function(e) {
