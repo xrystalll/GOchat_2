@@ -5,7 +5,10 @@ const conf = require(path.join(__dirname, 'config.json'))
 
 const express = require('express')
 const app = express()
-const server = require('http').createServer(app)
+
+const key = fs.readFileSync(path.join(__dirname, 'ssl', 'key.pem'))
+const cert = fs.readFileSync(path.join(__dirname, 'ssl', 'cert.pem'))
+const server = require('https').createServer({ key, cert }, app)
 
 const hpp = require('hpp')
 const helmet = require('helmet')

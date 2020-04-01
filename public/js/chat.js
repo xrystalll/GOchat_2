@@ -461,24 +461,24 @@ $(document).ready(() => {
   }),
   CancelRec.on('click', async () => {
     RecordingBar.addClass('none'),
-    socket.emit('stop_typing', { username: USER })
+    socket.emit('stop_typing', { username: USER }),
+    clearInterval(recHandler)
     try {
       if (!recorder) recorder = await recordAudio()
-      recorder.cancel(),
-      clearInterval(recHandler)
+      recorder.cancel()
     } catch (e) {
       console.error(e)
     }
   }),
   SendRec.on('click', async () => {
     RecordingBar.addClass('none'),
-    socket.emit('stop_typing', { username: USER })
+    socket.emit('stop_typing', { username: USER }),
+    clearInterval(recHandler)
     try {
       if (!recorder) recorder = await recordAudio()
       const blob = await recorder.stop()
       const file = new File([blob.audioBlob], 'record.oga')
-      uploadAttachment(file, { name: 'voice' }),
-      clearInterval(recHandler)
+      uploadAttachment(file, { name: 'voice' })
     } catch (e) {
       console.error(e)
     }
@@ -567,11 +567,11 @@ $(document).ready(() => {
 
   // UI: Toggle visible sending button
   Message.on('keyup', () => {
-    (Message.val().trim().length > 1) && (
+    (Message.val().trim().length > 1 && !!USER) && (
       MessageForm.addClass('typed'),
       Attachment.addClass('none')
     ),
-    (Message.val().trim().length < 2) && (
+    (Message.val().trim().length < 2 && !!USER) && (
       MessageForm.removeClass('typed'),
       Attachment.removeClass('none')
     )
@@ -749,7 +749,7 @@ $(document).ready(() => {
 
 
   Message.on('keyup', () => {
-    if (Message.val().length === 0) return
+    if (Message.val().length === 0 && !USER) return
 
     (Message.val().length > 1)
       ? socket.emit('typing', { username: USER })
@@ -764,13 +764,17 @@ $(document).ready(() => {
     const items = typings.filter(item => item !== USER);
     let typers;
     (typings.length < 3)
-      ? typers = items.join(', ') + ' typing a message...'
+      ? (
+        (typings.length > 1)
+          ? typers = items.join(', ') + ' are typing...'
+          : typers = items.join(', ') + ' is typing...'
+      )
       : typers = 'Several people are typing...',
     Status.addClass('typing').text(typers)
   }),
 
   socket.on('recording', (data) => {
-    Status.addClass('typing').text(`${data.username} recording a audio message...`)
+    Status.addClass('typing').text(`${data.username} is recording audio...`)
   }),
 
   Message.focusout(() => {
@@ -797,6 +801,11 @@ $(document).ready(() => {
       id: $(this).parent().data('id'),
       file: $(this).parent().find('.message_text .deleteble').data('url')
     })
+    if ($(this).parent().find('.audio').length === 1) {
+      const i = voiceList.indexOf($(this).parent().find('.control').data('src'))
+      i > -1 && voiceList.splice(i, 1),
+      (player.currentSrc.substring(player.currentSrc.lastIndexOf('/') + 1) === $(this).parent().find('.control').data('url')) && next()
+    }
   }),
   socket.on('delete', (data) => $(`.message_item[data-id="${data.id}"]`).remove()),
 

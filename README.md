@@ -35,6 +35,6 @@ or
 
 `node app`
 
-and open in browser http://localhost:3000
+and open in browser https://localhost:3000
 
 (port 3000 can change in file /config.json)
