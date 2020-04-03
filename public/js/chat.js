@@ -45,7 +45,7 @@ $(document).ready(() => {
     }, 3800)
   };
 
-  const timeFormat = (timestamp) => {
+  const timeFormat = (timestamp, type = 'full') => {
     const d = new Date();
     const t = new Date(timestamp * 1);
 
@@ -65,11 +65,23 @@ $(document).ready(() => {
     year !== curYear ? thisYear = ` ${year}` : thisYear = '';
 
     if (`${date}.${month}.${year}` === `${curDate}.${curMonth}.${curYear}`) {
-      return `today at ${hour}:${min}`
+      if (type === 'full') {
+        return `today at ${hour}:${min}`
+      } else {
+        return 'today'
+      }
     } else if (`${date}.${month}.${year}` === `${curDate - 1}.${curMonth}.${curYear}`) {
-      return `yesterday at ${hour}:${min}`
+      if (type === 'full') {
+        return `yesterday at ${hour}:${min}`
+      } else {
+        return 'yesterday'
+      }
     } else {
-      return `${date} ${month}${thisYear} at ${hour}:${min}`
+      if (type === 'full') {
+        return `${date} ${month}${thisYear} at ${hour}:${min}`
+      } else {
+        return `${date} ${month}${thisYear}`
+      }
     }
   };
 
@@ -102,7 +114,7 @@ $(document).ready(() => {
   const toHHMMSS = (sec) => {
     const secNum = parseInt(sec, 10)
     let hours = Math.floor(secNum / 3600)
-    let minutes = Math.floor((secNum - (hours * 3600)) / 60)
+    const minutes = Math.floor((secNum - (hours * 3600)) / 60)
     let seconds = secNum - (hours * 3600) - (minutes * 60)
 
     if (hours > 0) { hours = hours + ':' }
@@ -133,7 +145,7 @@ $(document).ready(() => {
           <div class="message_content">
             <div class="message_block_right ${data.type || ''}">
               ${data.type !== 'media' ? `<div class="message_user">${data.user}</div>` : ''}
-              ${data.quote ? `<div class="quote_block"></div>` : ''}
+              ${data.quote ? '<div class="quote_block"></div>' : ''}
               <div class="message_text">
                 ${!checkAudio(data.message) ? !checkVideo(data.message) ? (data.type !== 'media')
                   ? findLink(findAnswer(data.message))
@@ -332,10 +344,12 @@ $(document).ready(() => {
     .then(response => response.json())
     .then(data => {
       let quoteId;
-      QuoteForm.hasClass('active') && (
-        quoteId = QuoteForm.find('.quoteId').text()
-      ),
-      write(data.image, quoteId)
+      !data.error ? (
+        QuoteForm.hasClass('active') && (
+          quoteId = QuoteForm.find('.quoteId').text()
+        ),
+        write(data.image, quoteId)
+      ) : warning('Failed to upload', 'error')
     })
     .catch(err => console.error(err))
   };
@@ -873,7 +887,7 @@ $(document).ready(() => {
   };
 
   $(document).on('click', '.audio-btn', function() {
-    let initial = index;
+    const initial = index;
     index = $('.audio-btn').index(this),
     playPause(index, initial)
   }),
@@ -893,7 +907,7 @@ $(document).ready(() => {
     const curTime = player.currentTime;
     const duration = player.duration;
     $('.playing .duration').text(toHHMMSS(curTime)),
-    $('.playing').find('wave').eq(1).css('width', `${(curTime + .25) / duration * 100}%`)
+    $('.playing').find('wave').eq(1).css('width', `${(curTime + 0.25) / duration * 100}%`)
   }),
 
   $(document).on('click', '.playing wave', function(e) {

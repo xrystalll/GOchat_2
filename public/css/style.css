@@ -39,6 +39,7 @@ body {
   font-size: 15px;
   line-height: 1.4;
   max-width: 666px;
+  overflow-x: hidden;
   padding: 64px 0;
   margin: 0 auto !important;
   color: var(--main-text-color);
@@ -61,7 +62,6 @@ i, img {
   border: solid 4px var(--default-transparent);
 }
 
-
 .link {
   color: var(--accent-color);
   text-decoration: underline;
@@ -69,6 +69,7 @@ i, img {
 .none {
   display: none !important;
 }
+
 .alert {
   display: none;
   max-width: 228px;

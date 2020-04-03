@@ -19,17 +19,23 @@
 
 ## Install
 clone repo via git
-`https://github.com/xrystalll/GOchat_2.git`
+`git clone https://github.com/xrystalll/GOchat_2.git`
 
 or download
 https://github.com/xrystalll/GOchat_2/archive/master.zip
 
+go to project path
+`cd GOchat_2`
+
+install dependencies
 `npm install`
+
+create cluster on https://mongodb.com and change url on config file
 
 (if you don't want to use the mongoDB cloud database then you need to install it on your computer or server. More information at https://mongodb.com)
 
 ## Run
-`npm start`
+`npm start` via nodemon
 
 or
 
@@ -37,4 +43,12 @@ or
 
 and open in browser https://localhost:3000
 
-(port 3000 can change in file /config.json)
+## Others
+**Config file description**
+
+- port - Default port for server
+- localdb (true/false) - If the flag is 'true', then is used local database. Default 'false' - cloud DB
+- mongolocal - Url of local DB
+- mongoremote - Url of cloud DB
+- maxsize - Max size of uploaded user files
+- password - Password for clearing all messages via command `/clear <PASSWORD>`
