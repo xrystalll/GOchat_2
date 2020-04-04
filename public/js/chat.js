@@ -85,32 +85,6 @@ $(document).ready(() => {
     }
   };
 
-  const checkImg = (url) => url.toLowerCase().match(/\.(jpeg|jpg|png|webp|gif|bmp)$/) != null;
-
-  const checkVideo = (url) => url.toLowerCase().match(/\.(mp4|webm|3gp|avi)$/) != null;
-
-  const checkAudio = (url) => url.toLowerCase().match(/\.(oga)$/) != null;
-
-  const checkUrl = (url) => url.match(/(https?:\/\/[^\s]+)/g) != null;
-
-  const findLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '<a class="link" href="$1" target="_blank" title="Open in new tab">$1</a>');
-
-  const checkAnswer = (text, user) => {
-    const matches = text.match(/@[a-z0-9а-я-_]+/gi)
-
-    if (matches && matches[0] === '@' + user) return true
-    return false
-  };
-
-  const findAnswer = (text) => text.replace(/@[a-z0-9а-я-_]+/gi, (a) => `<span class="link atuser">${a}</span>`);
-
-  const extractLink = (text) => {
-    const matches = text.match(/(https?:\/\/[^\s]+)/g)
-
-    if (!matches) return text
-    return matches[0]
-  };
-
   const toHHMMSS = (sec) => {
     const secNum = parseInt(sec, 10)
     let hours = Math.floor(secNum / 3600)
@@ -131,8 +105,40 @@ $(document).ready(() => {
     if (count >= 1e9 && count < 1e12) return `${+(count / 1e9).toFixed(1)}B`;
   };
 
+  const checkImg = (url) => url.toLowerCase().match(/\.(jpeg|jpg|png|webp|gif|bmp)$/) != null;
+
+  const checkVideo = (url) => url.toLowerCase().match(/\.(mp4|webm|3gp|avi)$/) != null;
+
+  const checkAudio = (url) => url.toLowerCase().match(/\.(oga)$/) != null;
+
+  const checkUrl = (url) => url.match(/(https?:\/\/[^\s]+)/g) != null;
+
+  const findLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '<a class="link" href="$1" target="_blank" title="Open in new tab">$1</a>');
+
+  const extractLink = (text) => {
+    const matches = text.match(/(https?:\/\/[^\s]+)/g)
+
+    if (!matches) return text
+    return matches[0]
+  };
+
+  const cutLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '');
+
+  const checkAnswer = (text, user) => {
+    const matches = text.match(/@[a-z0-9а-я-_]+/gi)
+
+    if (matches && matches[0] === '@' + user) return true
+    return false
+  };
+
+  const findAnswer = (text) => text.replace(/@[a-z0-9а-я-_]+/gi, (a) => `<span class="link atuser">${a}</span>`);
+
   const template = {
     message: (data) => {
+      const type = checkAudio(data.message) ? 'voice'
+        : checkImg(data.content) ? 'image'
+        : checkVideo(data.content) ? 'video'
+        : 'text';
       return `
         <div class="message_item${data.my ? ' my' : ''}" data-id="${data.id}" data-user="${data.user}">
           <div class="message_block_left">
@@ -147,14 +153,7 @@ $(document).ready(() => {
               ${data.type !== 'media' ? `<div class="message_user">${data.user}</div>` : ''}
               ${data.quote ? '<div class="quote_block"></div>' : ''}
               <div class="message_text">
-                ${!checkAudio(data.message) ? !checkVideo(data.message) ? (data.type !== 'media')
-                  ? findLink(findAnswer(data.message))
-                  : `<a href="${extractLink(data.message)}" data-fancybox="gallery" target="_blank">
-                    <img src="${extractLink(data.message)}" class="image deleteble" ${!checkUrl(data.message) ? `data-url="${data.message.substring(data.message.lastIndexOf('/') + 1)}"` : ''} alt="">
-                  </a>`
-                  : `<video src="${extractLink(data.message)}" class="video" preload="true" loop controls></video>`
-                  : template.voice(data.message)
-                }
+                ${template.messageContent(data, type)}
               </div>
               <div class="message_time">${timeFormat(data.time)}</div>
             </div>
@@ -166,6 +165,26 @@ $(document).ready(() => {
           }
         </div>
       `;
+    },
+    messageContent: (data, type) => {
+      switch(type) {
+        case 'image':
+          return `
+            <a href="${extractLink(data.content)}" data-fancybox="gallery" target="_blank">
+              <img
+                src="${extractLink(data.content)}"
+                class="image deleteble"
+                ${!checkUrl(data.content) ? `data-url="${data.content.substring(data.content.lastIndexOf('/') + 1)}"` : ''}
+                alt=""
+              >
+            </a>`
+        case 'video':
+          return `<video src="${extractLink(data.content)}" class="video" preload="true" loop controls></video>`
+        case 'voice':
+          return template.voice(data.message)
+        default:
+          return findLink(findAnswer(data.message))
+      }
     },
     preview: (data) => {
       return `
@@ -179,21 +198,32 @@ $(document).ready(() => {
       `;
     },
     quote: (data) => {
+      const type = checkAudio(data.message) ? 'voice'
+        : checkImg(data.content) ? 'image'
+        : checkVideo(data.content) ? 'video'
+        : 'text';
       return `
         <div class="quote">
           ${data.username ? `<div class="message_quote_user">${data.username}</div>` : ''}
-          ${!checkAudio(data.message) ? !checkVideo(data.message) ? !checkImg(data.message)
-            ? `<div class="message_quote_text">${findLink(findAnswer(data.message))}</div>`
-            : `<div class="message_quote_text media">
-              <a href="${extractLink(data.message)}" data-fancybox target="_blank">
-                <img src="${extractLink(data.message)}" class="image" alt="">
-              </a>
-            </div>`
-            : '<div class="message_quote_text">Video</div>'
-            : '<div class="message_quote_text">Voice message</div>'
-          }
+          ${template.messageContent(data, type)}
         </div>
       `;
+    },
+    quoteContent: (data, type) => {
+      switch(type) {
+        case 'image':
+          return `<div class="message_quote_text media">
+              <a href="${extractLink(data.content)}" data-fancybox target="_blank">
+                <img src="${extractLink(data.content)}" class="image" alt="">
+              </a>
+            </div>`
+        case 'video':
+          return '<div class="message_quote_text">Video</div>'
+        case 'voice':
+          return '<div class="message_quote_text">Voice message</div>'
+        default:
+          return `<div class="message_quote_text">${findLink(findAnswer(data.message))}</div>`
+      }
     },
     voice: (url) => {
       return `
@@ -233,9 +263,9 @@ $(document).ready(() => {
   };
 
   // Handler: Write new message
-  const write = (text, quoteId = null) => {
+  const write = (message = null, content = null, quoteId = null) => {
     let user = USER || Username.val().replace(/(<([^>]+)>)/ig, '').trim();
-    const photo = localStorage.getItem('userphoto') || null;
+    const userphoto = localStorage.getItem('userphoto') || null;
 
     USER ? (
       user = USER
@@ -257,21 +287,23 @@ $(document).ready(() => {
       )
     );
 
-    (user.length > 3) ? text ? (
+    if (user.length > 3) {
+      if (!content && !message) return warning('Enter message text', 'error')
+
       Message.val(''),
       MessageForm.removeClass('typed'),
+      Attachment.removeClass('none'),
       socket.emit('stop_typing', { username: USER }),
       socket.emit('new_message', {
-        message: text,
+        message,
+        content,
         username: user,
-        userphoto: photo,
+        userphoto,
         time: Date.now(),
         quoteId
       }),
       cancelQuote()
-    )
-    : warning('Enter message text', 'error')
-    : warning('Enter name', 'error')
+    } else warning('Enter name', 'error')
   };
 
   // Handler: Clear all messages
@@ -304,7 +336,7 @@ $(document).ready(() => {
         $(`.message_item[data-id="${props._id}"] .quote_block`).html(
           data
             ? template.quote(data)
-            : template.quote({ username: null, message: 'Deleted message' })
+            : template.quote({ username: null, message: 'Deleted message', content: '' })
         )
       })
       .catch(err => console.error(err))
@@ -344,11 +376,20 @@ $(document).ready(() => {
     .then(response => response.json())
     .then(data => {
       let quoteId;
+      let text;
       !data.error ? (
         QuoteForm.hasClass('active') && (
           quoteId = QuoteForm.find('.quoteId').text()
         ),
-        write(data.image, quoteId)
+        (param.name === 'voice') ? (
+          write(data.image, undefined, quoteId)
+        ) : (
+          text = Message.val().replace(/(<([^>]+)>)/ig, '').trim(),
+          (text.length > 1500) && (
+            text = text.substr(0, 1500)
+          ),
+          write(text, data.image, quoteId)
+        )
       ) : warning('Failed to upload', 'error')
     })
     .catch(err => console.error(err))
@@ -360,6 +401,78 @@ $(document).ready(() => {
     $('.quote_form .message_user, .quote_form .message_text, .quote_form .quoteId').empty()
   };
 
+  // Handler: Play/Pause voice message
+  const playPause = (index, initial = index) => {
+    const curSrc = player.currentSrc.replace(/.+[\\\/]/, '');
+    const dataSrc = encodeURI($('.audio').eq(index).find('.control').data('src').replace(/.+[\\\/]/, ''));
+
+    initial === index ? (
+      player.paused ? (
+        curSrc === dataSrc ? (
+          player.play()
+        ) : (
+          player.src = voiceList[index],
+          player.play()
+            .then(() => meta(
+              $('.audio').eq(index).parents('.message_block_right').find('.message_user').text()
+            ))
+        )
+      ) : player.pause()
+    ) : (
+      player.src = voiceList[index],
+      player.play()
+        .then(() => meta(
+          $('.audio').eq(index).parents('.message_block_right').find('.message_user').text()
+        ))
+    )
+  };
+
+  // Handler: Play next voice message
+  const next = () => {
+    index = (index + 1);
+    if (index > voiceList.length - 1) {
+      player.pause()
+      return
+    }
+    player.src = voiceList[index];
+    player.play()
+      .then(() => meta(
+        $('.audio').eq(index).parents('.message_block_right').find('.message_user').text()
+      )),
+    $('.audio').not('playing').removeClass('playing')
+  };
+
+  // Handler: Set browser media metadata
+  const meta = (title) => {
+    let cover;
+    cover = $('.audio').eq(index).parents('.message_item').find('.message_avatar')
+      .css('background-image').replace(/^url\(['"](.+)['"]\)/, '$1'),
+    cover === 'none' && (
+      cover = window.location.href + 'images/icon_192.png'
+    ),
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title,
+      artist: 'Voice message',
+      artwork: [{ src: cover }]
+    })
+  };
+
+  // Handler: Init waveform
+  const initWave = (url) => {
+    WaveSurfer.create({
+      container: document.querySelector('.wave_' + url.substring(url.lastIndexOf('/') + 1).replace('.oga', '')),
+      waveColor: '#405267',
+      progressColor: '#5d80a6',
+      barWidth: 3,
+      barHeight: 2,
+      barRadius: 3,
+      cursorWidth: 0,
+      height: 32,
+      normalize: true,
+      pixelRatio: 2
+    }).load(url)
+  };
+
   // Handler: Push browser notification
   const sendNotification = (data, callback) => {
     if (data === undefined || !data.message) return false
@@ -367,7 +480,7 @@ $(document).ready(() => {
     const message = (data.message === null) ? 'Empty message' : data.message
     const icon = (data.icon === null) ? window.location.href + 'images/icon_192.png' : data.icon
     const image = (data.image === null) ? undefined : data.image
-    const sendNotification = () => {
+    const send = () => {
       const notification = new Notification(title, {
         icon,
         body: message,
@@ -385,9 +498,9 @@ $(document).ready(() => {
     else {
       if (Notification.permission === 'default') {
         Notification.requestPermission(permission => {
-          if (permission !== 'denied') sendNotification()
+          if (permission !== 'denied') send()
         })
-      } else sendNotification()
+      } else send()
     }
   };
 
@@ -428,22 +541,6 @@ $(document).ready(() => {
 
     resolve({ start, stop, cancel })
   });
-
-  // Handler: Init waveform
-  const initWave = (url) => {
-    WaveSurfer.create({
-      container: document.querySelector('.wave_' + url.substring(url.lastIndexOf('/') + 1).replace('.oga', '')),
-      waveColor: '#405267',
-      progressColor: '#5d80a6',
-      barWidth: 3,
-      barHeight: 2,
-      barRadius: 3,
-      cursorWidth: 0,
-      height: 32,
-      normalize: true,
-      pixelRatio: 2
-    }).load(url)
-  };
 
   // Handler: Recording timer
   let seconds = 0;
@@ -498,6 +595,41 @@ $(document).ready(() => {
     }
   }),
 
+  // UI: Play/Pause voice message
+  $(document).on('click', '.audio-btn', function() {
+    const initial = index;
+    index = $('.audio-btn').index(this),
+    playPause(index, initial)
+  }),
+
+  player.onended = () => next(),
+
+  player.addEventListener('pause', () => {
+    $('.audio').removeClass('playing')
+  }),
+
+  player.addEventListener('play', () => {
+    $('.audio').removeClass('playing'),
+    $('.audio').eq(index).addClass('playing')
+  }),
+
+  player.addEventListener('timeupdate', () => {
+    const curTime = player.currentTime;
+    const duration = player.duration;
+    $('.playing .duration').text(toHHMMSS(curTime)),
+    $('.playing').find('wave').eq(1).css('width', `${(curTime + 0.25) / duration * 100}%`)
+  }),
+
+  // UI: Seeking on voice bar
+  $(document).on('click', '.playing wave', function(e) {
+    const offset = e.pageX - $(this).offset().left;
+    const duration = player.duration;
+    const width = $(this).width();
+    duration && (
+      player.currentTime = (offset / width) * duration
+    )
+  }),
+
   // UI: Uploading user avatar
   AvatarInput.on('change', (e) => {
     e.target.files[0].size > 0 ? uploadAvatar(e.target.files[0]) : warning('Empty file', 'error')
@@ -528,40 +660,6 @@ $(document).ready(() => {
     $('.user').empty().css('background-image', `url('./img/users/${localStorage.getItem('userphoto')}')`)
   ),
 
-  // UI: Send message via button
-  SendMessage.on('click', () => {
-    let text = Message.val().replace(/(<([^>]+)>)/ig, '').trim();
-    if (text.length > 1) {
-      (text.length > 1500) && (
-        text = text.substr(0, 1500)
-      );
-      const value = text.split(' ');
-      const quoteActive = QuoteForm.hasClass('active');
-      let quoteId;
-      quoteActive && (
-        quoteId = QuoteForm.find('.quoteId').text()
-      ),
-      (value[0] === '/clear') ? clear(value[1]) : write(text, quoteId)
-    } else warning('Enter message text', 'error')
-  }),
-
-  // UI: Send message via ENTER key
-  $(document).on('keyup', '#nameInput, #textInput', (e) => {
-    let text = Message.val().replace(/(<([^>]+)>)/ig, '').trim();
-    if (text.length > 1 && e.which === 13) {
-      (text.length > 1500) && (
-        text = text.substr(0, 1500)
-      );
-      const value = text.split(' ');
-      const quoteActive = QuoteForm.hasClass('active');
-      let quoteId;
-      quoteActive && (
-        quoteId = QuoteForm.find('.quoteId').text()
-      ),
-      (value[0] === '/clear') ? clear(value[1]) : write(text, quoteId)
-    }
-  }),
-
   // UI: Check notification settings in localstorage
   (localStorage.getItem('notifications') === 'disable') && (
     NotifSetting.removeClass('on').addClass('off')
@@ -579,6 +677,54 @@ $(document).ready(() => {
     }
   }),
 
+  // UI: Send message via button
+  SendMessage.on('click', () => {
+    let text = Message.val().replace(/(<([^>]+)>)/ig, '').trim();
+    if (text.length > 1) {
+      (text.length > 1500) && (
+        text = text.substr(0, 1500)
+      );
+      const value = text.split(' ');
+      const quoteActive = QuoteForm.hasClass('active');
+      let content;
+      let quoteId;
+      quoteActive && (
+        quoteId = QuoteForm.find('.quoteId').text()
+      ),
+      (checkImg(text) || checkVideo(text)) ? (
+        content = extractLink(text),
+        text = cutLink(text)
+      ) : (
+        content = undefined
+      ),
+      (value[0] === '/clear') ? clear(value[1]) : write(text, content, quoteId)
+    } else warning('Enter message text', 'error')
+  }),
+
+  // UI: Send message via ENTER key
+  $(document).on('keyup', '#nameInput, #textInput', (e) => {
+    let text = Message.val().replace(/(<([^>]+)>)/ig, '').trim();
+    if (text.length > 1 && e.which === 13) {
+      (text.length > 1500) && (
+        text = text.substr(0, 1500)
+      );
+      const value = text.split(' ');
+      const quoteActive = QuoteForm.hasClass('active');
+      let content;
+      let quoteId;
+      quoteActive && (
+        quoteId = QuoteForm.find('.quoteId').text()
+      ),
+      (checkImg(text) || checkVideo(text)) ? (
+        content = extractLink(text),
+        text = cutLink(text)
+      ) : (
+        content = undefined
+      ),
+      (value[0] === '/clear') ? clear(value[1]) : write(text, content, quoteId)
+    }
+  }),
+
   // UI: Toggle visible sending button
   Message.on('keyup', () => {
     (Message.val().trim().length > 1 && !!USER) && (
@@ -589,6 +735,11 @@ $(document).ready(() => {
       MessageForm.removeClass('typed'),
       Attachment.removeClass('none')
     )
+  }),
+
+  // UI: Paste username to input
+  $(document).on('click', '.answer', function() {
+    Message.val('@' + $(this).data('user') + ' ').focus()
   }),
 
   // UI: Itit quote form
@@ -619,10 +770,6 @@ $(document).ready(() => {
   // UI: Close quote form
   CancelQuote.on('click', cancelQuote),
 
-  // UI: Paste username to input
-  $(document).on('click', '.answer', function() {
-    Message.val('@' + $(this).data('user') + ' ').focus()
-  }),
 
   // UI: Output old messages from DB
   socket.on('output', (data) => {
@@ -631,7 +778,7 @@ $(document).ready(() => {
       $('.empty-results').remove(),
       (document.querySelector('#chat').children.length === 0) && (
         $.each(data, (i) => {
-          const type = checkImg(data[i].message) || checkVideo(data[i].message) ? 'media' : null;
+          const type = checkImg(data[i].content) || checkVideo(data[i].content) ? 'media' : null;
           const my = data[i].username === USER;
           Chat.prepend(
             template.message({
@@ -639,6 +786,7 @@ $(document).ready(() => {
               user: data[i].username,
               photo: data[i].userphoto,
               message: data[i].message,
+              content: data[i].content,
               time: data[i].time,
               quote: data[i].quote,
               type,
@@ -661,20 +809,21 @@ $(document).ready(() => {
     ) : Chat.html(template.error('No messages yet'))
   }),
 
+
   // UI: Adding new message
   socket.on('new_message', (data) => {
-    const type = checkImg(data.message) || checkVideo(data.message) ? 'media' : null;
+    const type = checkImg(data.content) || checkVideo(data.content) ? 'media' : null;
     const my = data.username === USER;
     const sound = new Audio('./sounds/new_in.wav');
     const icon = data.userphoto ? window.location.href + 'img/users/' + data.userphoto : null;
-    const message = checkImg(data.message) ? 'Image' : checkVideo(data.message) ? 'Video' : data.message;
-    const image = checkImg(data.message) ? data.message : null;
+    const message = checkImg(data.content) ? 'Image' : checkVideo(data.content) ? 'Video' : data.message;
+    const image = checkImg(data.content) ? data.content : null;
     (document.body.scrollHeight - (window.scrollY + window.innerHeight) < 150) && (
       $('html, body').animate({ scrollTop: $(document).height() }, 100)
     ),
     my ? $('html, body').animate({ scrollTop: $(document).height() }, 100) : (
       sound.play(),
-      (checkAnswer(data.message, USER) && localStorage.getItem('notifications') !== 'disable' && document.visibilityState !== 'visible') && (
+      (checkAnswer(data.message, USER) && localStorage.getItem('notifications') !== 'disable') && (
         sendNotification({
           title: data.username,
           message,
@@ -695,6 +844,7 @@ $(document).ready(() => {
         user: data.username,
         photo: data.userphoto,
         message: data.message,
+        content: data.content,
         time: data.time,
         quote: data.quote,
         type,
@@ -713,6 +863,7 @@ $(document).ready(() => {
     )
   }),
 
+
   // UI: Load more old messages from DB
   socket.on('more', (data) => {
     let position = 0;
@@ -721,7 +872,7 @@ $(document).ready(() => {
       $('.empty-results').remove(),
       (document.querySelector('#chat').children.length !== 0) && (
         $.each(data, (i) => {
-          const type = checkImg(data[i].message) || checkVideo(data[i].message) ? 'media' : null;
+          const type = checkImg(data[i].content) || checkVideo(data[i].content) ? 'media' : null;
           const my = data[i].username === USER;
           initH = $('.message_item').outerHeight(true),
           position += initH,
@@ -731,6 +882,7 @@ $(document).ready(() => {
               user: data[i].username,
               photo: data[i].userphoto,
               message: data[i].message,
+              content: data[i].content,
               time: data[i].time,
               quote: data[i].quote,
               type,
@@ -787,9 +939,11 @@ $(document).ready(() => {
     Status.addClass('typing').text(typers)
   }),
 
+
   socket.on('recording', (data) => {
     Status.addClass('typing').text(`${data.username} is recording audio...`)
   }),
+
 
   Message.focusout(() => {
     if (Message.val().length < 2) return
@@ -830,92 +984,5 @@ $(document).ready(() => {
   }),
 
 
-  socket.on('alert', (data) => warning(data.message, data.type));
-
-
-  const playPause = (index, initial = index) => {
-    const curSrc = player.currentSrc.replace(/.+[\\\/]/, '');
-    const dataSrc = encodeURI($('.audio').eq(index).find('.control').data('src').replace(/.+[\\\/]/, ''));
-
-    initial === index ? (
-      player.paused ? (
-        curSrc === dataSrc ? (
-          player.play()
-        ) : (
-          player.src = voiceList[index],
-          player.play()
-            .then(() => meta(
-              $('.audio').eq(index).parents('.message_block_right').find('.message_user').text()
-            ))
-        )
-      ) : player.pause()
-    ) : (
-      player.src = voiceList[index],
-      player.play()
-        .then(() => meta(
-          $('.audio').eq(index).parents('.message_block_right').find('.message_user').text()
-        ))
-    )
-  };
-
-  const next = () => {
-    index = (index + 1);
-    if (index > voiceList.length - 1) {
-      player.pause()
-      return
-    }
-    player.src = voiceList[index];
-    player.play()
-      .then(() => meta(
-        $('.audio').eq(index).parents('.message_block_right').find('.message_user').text()
-      )),
-    $('.audio').not('playing').removeClass('playing')
-  };
-
-  const meta = (title) => {
-    let cover;
-    cover = $('.audio').eq(index).parents('.message_item').find('.message_avatar')
-      .css('background-image').replace(/^url\(['"](.+)['"]\)/, '$1'),
-    cover === 'none' && (
-      cover = window.location.href + 'images/icon_192.png'
-    ),
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title,
-      artist: 'Voice message',
-      artwork: [{ src: cover }]
-    })
-  };
-
-  $(document).on('click', '.audio-btn', function() {
-    const initial = index;
-    index = $('.audio-btn').index(this),
-    playPause(index, initial)
-  }),
-
-  player.onended = () => next(),
-
-  player.addEventListener('pause', () => {
-    $('.audio').removeClass('playing')
-  }),
-
-  player.addEventListener('play', () => {
-    $('.audio').removeClass('playing'),
-    $('.audio').eq(index).addClass('playing')
-  }),
-
-  player.addEventListener('timeupdate', () => {
-    const curTime = player.currentTime;
-    const duration = player.duration;
-    $('.playing .duration').text(toHHMMSS(curTime)),
-    $('.playing').find('wave').eq(1).css('width', `${(curTime + 0.25) / duration * 100}%`)
-  }),
-
-  $(document).on('click', '.playing wave', function(e) {
-    const offset = e.pageX - $(this).offset().left;
-    const duration = player.duration;
-    const width = $(this).width();
-    duration && (
-      player.currentTime = (offset / width) * duration
-    )
-  })
+  socket.on('alert', (data) => warning(data.message, data.type))
 });

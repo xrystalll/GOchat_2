@@ -169,7 +169,8 @@ io.on('connection', (socket) => {
 
   socket.on('new_message', (data) => {
     const msg = {
-      message: xss(data.message.replace(/(<([^>]+)>)/ig, '')),
+      message: xss(data.message),
+      content: xss(data.content),
       username: xss(data.username),
       userphoto: xss(data.userphoto),
       time: data.time,

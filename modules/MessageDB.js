@@ -3,8 +3,10 @@ const Schema = Mongoose.Schema
 
 const MessageSchema = new Schema({
   message: {
-    type: String,
-    required: true
+    type: String
+  },
+  content: {
+    type: String
   },
   username: {
     type: String,
