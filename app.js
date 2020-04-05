@@ -31,7 +31,20 @@ const checkFileType = (file, cb) => {
   const extname = filetypes.test(path.extname(file.originalname).toLowerCase())
   const mimetype = filetypes.test(file.mimetype)
   if (mimetype && extname) return cb(null, true)
-  else cb('Error: It\'s not image')
+  else cb('Error: It\'s not image', false)
+}
+const checkFileExec = (file, cb) => {
+  if (
+    file.mimetype === 'text/javascript' ||
+    file.mimetype === 'text/html' ||
+    file.mimetype === 'text/css' ||
+    file.mimetype === 'application/json' ||
+    file.mimetype === 'application/ld+json' ||
+    file.mimetype === 'application/php'
+  ) {
+    cb('Error: File format is not allowed', false)
+  }
+  else cb(null, true)
 }
 const storage = (dest, name) => {
   return multer.diskStorage({
@@ -58,6 +71,12 @@ const uploadVoice = multer({
   storage: storage('attachments', 'voice'),
   limits: { fileSize: 1048576 * conf.maxsize * 4 }
 }).single('voice')
+
+const uploadFile = multer({
+  storage: storage('attachments', 'file'),
+  limits: { fileSize: 1048576 * conf.maxsize * 5 },
+  fileFilter: (req, file, cb) => checkFileExec(file, cb)
+}).single('file')
 
 const online = []
 const typings = []
@@ -86,43 +105,49 @@ app.post('/upload/avatar', (req, res) => {
           res.json({ image: req.file.filename })
         })
         .catch(err => console.error(err))
-    ) : res.status(500).json({ error: err })
+    ) : res.status(400).json({ error: err })
   })
 })
 
 app.post('/upload/image', (req, res) => {
   uploadImage(req, res, (err) => {
     req.file
-      ? res.json({ image: './img/attachments/' + req.file.filename })
-      : res.status(500).json({ error: err })
+      ? res.json({ file: './attachments/images/' + req.file.filename })
+      : res.status(400).json({ error: err })
   })
 })
 
 app.post('/upload/voice', (req, res) => {
   uploadVoice(req, res, (err) => {
     req.file
-      ? (
-        fs.readFile(req.file.path, (err, data) => {
-          if (err) return
-          fs.writeFileSync(req.file.path, data)
-        }),
-        res.json({ image: './rec/voice/' + req.file.filename })
-      )
-      : res.status(500).json({ error: err })
+      ? res.json({ file: './attachments/voice/' + req.file.filename })
+      : res.status(400).json({ error: err })
   })
 })
 
-app.get('/img/users/:file', (req, res) => {
+app.post('/upload/file', (req, res) => {
+  uploadFile(req, res, (err) => {
+    req.file
+      ? res.json({ file: './attachments/files/' + req.file.filename })
+      : res.status(400).json({ error: err })
+  })
+})
+
+app.get('/users/images/:file', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'uploads', 'avatars', req.params.file))
 })
 
-app.get('/img/attachments/:file', (req, res) => {
+app.get('/attachments/images/:file', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'uploads', 'attachments', req.params.file))
 })
 
-app.get('/rec/voice/:file', (req, res) => {
+app.get('/attachments/voice/:file', (req, res) => {
   res.set('Content-Type', 'audio/ogg')
   res.set('Accept-Ranges', 'bytes')
+  res.sendFile(path.join(__dirname, 'public', 'uploads', 'attachments', req.params.file))
+})
+
+app.get('/attachments/files/:file', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'uploads', 'attachments', req.params.file))
 })
 

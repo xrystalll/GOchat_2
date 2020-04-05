@@ -6,13 +6,13 @@
 - Users online counter
 - Typing indicator
 - Uploading user avatar
-- Uploading and sending images from devices
+- Uploading and sending images and other files from device
 - Sending images by url from internet
 - Catching links in text
 - Link preview
 - Deletion self messages
 - Clearing all messages via command with password
-- Ability to quote messages
+- Quote messages
 - Sending videos by url from internet
 - Browser notifications
 - Voice messages

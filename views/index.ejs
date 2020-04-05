@@ -60,10 +60,22 @@
     <input type="text" id="nameInput" placeholder="Name">
     <div class="input_bar">
       <input type="text" id="textInput" placeholder="Enter a message...">
-      <label for="imageInput" class="attachment image none" title="Send image">
-        <i class="material-icons">image</i>
-      </label>
-      <input type="file" id="imageInput" accept="image/*" class="none">
+      <span class="attachment attach_icon none" title="Send image or file">
+        <i class="material-icons">attach_file</i>
+      </span>
+      <div class="image_or_file none">
+        <label for="imageInput" class="attach image" title="Send image">
+          <i class="material-icons">image</i>
+          <span>Image</span>
+        </label>
+        <input type="file" id="imageInput" accept="image/*" class="none">
+
+        <label for="fileInput" class="attach file" title="Send file">
+          <i class="material-icons">insert_drive_file</i>
+          <span>File</span>
+        </label>
+        <input type="file" id="fileInput" class="none">
+      </div>
       <span id="voiceInput" class="attachment record none" title="Record voice message">
         <i class="material-icons">mic</i>
       </span>

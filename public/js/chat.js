@@ -9,6 +9,9 @@ $(document).ready(() => {
   const Status = $('#status');
   const AvatarInput = $('#avatarInput');
   const ImageInput = $('#imageInput');
+  const FileInput = $('#fileInput');
+  const AttachBtn = $('.attach_icon');
+  const AttachBar = $('.image_or_file');
   const VoiceInput = $('#voiceInput');
   const Attachment = $('.attachment');
   const RecordingBar = $('.recording_bar');
@@ -111,7 +114,9 @@ $(document).ready(() => {
 
   const checkAudio = (url) => url.toLowerCase().match(/\.(oga)$/) != null;
 
-  const checkUrl = (url) => url.match(/(https?:\/\/[^\s]+)/g) != null;
+  const checkUrl = (url) => url.toLowerCase().match(/(https?:\/\/[^\s]+)/g) != null;
+
+  const checkFile = (url) => url.toLowerCase().match(/files\/[file]+/gi) != null;
 
   const findLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '<a class="link" href="$1" target="_blank" title="Open in new tab">$1</a>');
 
@@ -136,14 +141,16 @@ $(document).ready(() => {
   const template = {
     message: (data) => {
       const type = checkAudio(data.message) ? 'voice'
+        : checkFile(data.content) ? 'file'
         : checkImg(data.content) ? 'image'
         : checkVideo(data.content) ? 'video'
         : 'text';
+      if (type === 'file') data.type = null
       return `
         <div class="message_item${data.my ? ' my' : ''}" data-id="${data.id}" data-user="${data.user}">
           <div class="message_block_left">
             ${data.photo
-              ? `<div class="message_avatar${!data.my ? ` answer" data-user="${data.user}` : ''}" ${data.photo ? ` style="background-image: url('./img/users/${data.photo}');"` : ''}></div>`
+              ? `<div class="message_avatar${!data.my ? ` answer" data-user="${data.user}` : ''}" ${data.photo ? ` style="background-image: url('./users/images/${data.photo}');"` : ''}></div>`
               : `<div class="message_avatar${!data.my ? ` answer" data-user="${data.user}` : ''}">${data.user ? data.user.slice(0, 1) : ''}</div>`
             }
           </div>
@@ -182,6 +189,8 @@ $(document).ready(() => {
           return `<video src="${extractLink(data.content)}" class="video" preload="true" loop controls></video>`
         case 'voice':
           return template.voice(data.message)
+        case 'file':
+          return template.file(data.content, 'deleteble')
         default:
           return findLink(findAnswer(data.message))
       }
@@ -199,6 +208,7 @@ $(document).ready(() => {
     },
     quote: (data) => {
       const type = checkAudio(data.message) ? 'voice'
+        : checkFile(data.content) ? 'file'
         : checkImg(data.content) ? 'image'
         : checkVideo(data.content) ? 'video'
         : 'text';
@@ -221,9 +231,29 @@ $(document).ready(() => {
           return '<div class="message_quote_text">Video</div>'
         case 'voice':
           return '<div class="message_quote_text">Voice message</div>'
+        case 'file':
+          return template.file(data.content)
         default:
           return `<div class="message_quote_text">${findLink(findAnswer(data.message))}</div>`
       }
+    },
+    file: (url, type = null) => {
+      return `
+        <a class="file" href="${url}" download>
+          <div class="file-side">
+            <div
+              class="file-icon ${type || ''}"
+              data-src="${extractLink(url)}" 
+              data-url="${url.substring(url.lastIndexOf('/') + 1)}"
+              ${checkImg(url)? `style="background-image: url('${url}');"` : ''}
+            >${!checkImg(url)? '<i class="material-icons">insert_drive_file</i>' : ''}</div>
+          </div>
+          <div class="file-info">
+            <span>File</span>
+            <span>${url.substr(url.lastIndexOf('.'))}</span>
+          </div>
+        </a>
+      `;
     },
     voice: (url) => {
       return `
@@ -354,7 +384,7 @@ $(document).ready(() => {
     .then(data => {
       !data.error ? (
         localStorage.setItem('userphoto', data.image),
-        $('.user').empty().css('background-image', `url('./img/users/${data.image}')`),
+        $('.user').empty().css('background-image', `url('./users/images/${data.image}')`),
         socket.emit('set_userphoto', {
           username: USER,
           userphoto: data.image
@@ -382,13 +412,13 @@ $(document).ready(() => {
           quoteId = QuoteForm.find('.quoteId').text()
         ),
         (param.name === 'voice') ? (
-          write(data.image, undefined, quoteId)
+          write(data.file, undefined, quoteId)
         ) : (
           text = Message.val().replace(/(<([^>]+)>)/ig, '').trim(),
           (text.length > 1500) && (
             text = text.substr(0, 1500)
           ),
-          write(text, data.image, quoteId)
+          write(text, data.file, quoteId)
         )
       ) : warning('Failed to upload', 'error')
     })
@@ -640,6 +670,11 @@ $(document).ready(() => {
     e.target.files[0].size > 0 ? uploadAttachment(e.target.files[0], { name: 'image' }) : warning('Empty file', 'error')
   }),
 
+  // UI: Uploading message file
+  FileInput.on('change', (e) => {
+    e.target.files[0].size > 0 ? uploadAttachment(e.target.files[0], { name: 'file' }) : warning('Empty file', 'error')
+  }),
+
   // UI: Check username in localstorage
   USER && (
     socket.emit('set_username', { username: USER }),
@@ -657,7 +692,7 @@ $(document).ready(() => {
     socket.emit('set_userphoto', {
       image: localStorage.getItem('userphoto')
     }),
-    $('.user').empty().css('background-image', `url('./img/users/${localStorage.getItem('userphoto')}')`)
+    $('.user').empty().css('background-image', `url('./users/images/${localStorage.getItem('userphoto')}')`)
   ),
 
   // UI: Check notification settings in localstorage
@@ -747,6 +782,7 @@ $(document).ready(() => {
     const media = $(this).parent().find('.message_block_right').hasClass('media');
     const video = $(this).parent().find('.video').attr('src');
     const audio = $(this).parent().find('.control').data('src');
+    const file = $(this).parent().find('.file-icon').data('src');
     QuoteForm.addClass('active'),
     media ? (
       $('.quote_form .message_user').addClass('none'),
@@ -763,6 +799,9 @@ $(document).ready(() => {
     ) : (audio && checkAudio(audio)) ? (
       $('.quote_form .message_user').removeClass('none'),
       $('.quote_form .message_text').removeClass('media').empty().text('Voice message')
+    ) : (file && checkFile(file)) ? (
+      $('.quote_form .message_user').removeClass('none'),
+      $('.quote_form .message_text').removeClass('media').empty().text('File')
     ) : $('.quote_form .message_text').html($(this).parent().find('.message_text').html().trim()),
     Message.focus()
   }),
@@ -770,6 +809,17 @@ $(document).ready(() => {
   // UI: Close quote form
   CancelQuote.on('click', cancelQuote),
 
+  // UI: Toggle visible attach chooser 
+  AttachBtn.on('click', () => {
+    AttachBar.toggleClass('none')
+  }),
+
+  $(document).on('click', (e) => {
+    const $target = $(e.target)
+    if (!AttachBar.hasClass('none') && $target.closest('.attach_icon').length === 0) {
+      AttachBar.addClass('none')
+    }
+  }),
 
   // UI: Output old messages from DB
   socket.on('output', (data) => {
