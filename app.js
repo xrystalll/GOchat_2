@@ -127,8 +127,13 @@ app.post('/upload/voice', (req, res) => {
 
 app.post('/upload/file', (req, res) => {
   uploadFile(req, res, (err) => {
+    const stats = fs.statSync(req.file.path)
+    const fileSizeInBytes = stats['size']
     req.file
-      ? res.json({ file: './attachments/files/' + req.file.filename })
+      ? res.json({
+        file: './attachments/files/' + req.file.filename,
+        size: fileSizeInBytes
+      })
       : res.status(400).json({ error: err })
   })
 })
@@ -199,7 +204,8 @@ io.on('connection', (socket) => {
       username: xss(data.username),
       userphoto: xss(data.userphoto),
       time: data.time,
-      quote: data.quoteId
+      quote: data.quoteId,
+      fileInfo: data.fileInfo
     }
     MessageDB.create(msg)
       .then(data => io.sockets.emit('new_message', data))

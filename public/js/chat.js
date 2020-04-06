@@ -33,14 +33,14 @@ $(document).ready(() => {
     (USER.length > 24) && (
       USER = USER.substr(0, 24)
     )
-  };
+  }
 
   const player = new Audio;
   const voiceList = [];
   let index = 0;
 
   const warning = (message, type = 'info') => {
-    const id = Math.random().toString(36).substr(2, 8);
+    const id = Math.random().toString(36).substr(2, 8)
     $('body').append(`<div class="alert ${type}" data-id="${id}">${message}</div>`),
     $(`.alert[data-id="${id}"]`).fadeIn(800).fadeOut(3000),
     setTimeout(() => {
@@ -49,23 +49,23 @@ $(document).ready(() => {
   };
 
   const timeFormat = (timestamp, type = 'full') => {
-    const d = new Date();
-    const t = new Date(timestamp * 1);
+    const d = new Date()
+    const t = new Date(timestamp * 1)
 
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-    const curYear = d.getFullYear();
-    const curMonth = months[d.getMonth()];
-    const curDate = d.getDate();
+    const curYear = d.getFullYear()
+    const curMonth = months[d.getMonth()]
+    const curDate = d.getDate()
 
-    const year = t.getFullYear();
-    const month = months[t.getMonth()];
-    const date = t.getDate();
-    const hour = t.getHours();
-    const min = t.getMinutes() < 10 ? `0${t.getMinutes()}` : t.getMinutes();
+    const year = t.getFullYear()
+    const month = months[t.getMonth()]
+    const date = t.getDate()
+    const hour = t.getHours()
+    const min = t.getMinutes() < 10 ? `0${t.getMinutes()}` : t.getMinutes()
 
-    let thisYear;
-    year !== curYear ? thisYear = ` ${year}` : thisYear = '';
+    let thisYear
+    year !== curYear ? thisYear = ` ${year}` : thisYear = ''
 
     if (`${date}.${month}.${year}` === `${curDate}.${curMonth}.${curYear}`) {
       if (type === 'full') {
@@ -101,14 +101,26 @@ $(document).ready(() => {
   };
 
   const counter = (count) => {
-    if (count === 0) return '';
-    if (count < 1e3) return count;
-    if (count >= 1e3 && count < 1e6) return `${+(count / 1e3).toFixed(1)}K`;
-    if (count >= 1e6 && count < 1e9) return `${+(count / 1e6).toFixed(1)}M`;
-    if (count >= 1e9 && count < 1e12) return `${+(count / 1e9).toFixed(1)}B`;
+    if (count === 0) return 0
+    if (count < 1e3) return count
+    if (count >= 1e3 && count < 1e6) return `${+(count / 1e3).toFixed(1)}K`
+    if (count >= 1e6 && count < 1e9) return `${+(count / 1e6).toFixed(1)}M`
+    if (count >= 1e9 && count < 1e12) return `${+(count / 1e9).toFixed(1)}B`
+  };
+
+  const formatBytes = (bytes, decimals) => {
+    if (bytes === 0) return '0 bytes'
+
+    const k = 1024
+    const dm = decimals <= 0 ? 0 : decimals || 2
+    const sizes = ['bytes', 'Kb', 'Mb', 'Gb']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
   };
 
   const checkImg = (url) => url.toLowerCase().match(/\.(jpeg|jpg|png|webp|gif|bmp)$/) != null;
+
+  const checkGif = (url) => url.toLowerCase().match(/\.(gif)$/) != null;
 
   const checkVideo = (url) => url.toLowerCase().match(/\.(mp4|webm|3gp|avi)$/) != null;
 
@@ -141,10 +153,11 @@ $(document).ready(() => {
   const template = {
     message: (data) => {
       const type = checkAudio(data.message) ? 'voice'
+        : checkVideo(data.content) ? 'video'
+        : checkGif(data.content) ? 'image'
         : checkFile(data.content) ? 'file'
         : checkImg(data.content) ? 'image'
-        : checkVideo(data.content) ? 'video'
-        : 'text';
+        : 'text'
       if (type === 'file') data.type = null
       return `
         <div class="message_item${data.my ? ' my' : ''}" data-id="${data.id}" data-user="${data.user}">
@@ -174,7 +187,7 @@ $(document).ready(() => {
       `;
     },
     messageContent: (data, type) => {
-      switch(type) {
+      switch (type) {
         case 'image':
           return `
             <a href="${extractLink(data.content)}" data-fancybox="gallery" target="_blank">
@@ -190,39 +203,30 @@ $(document).ready(() => {
         case 'voice':
           return template.voice(data.message)
         case 'file':
-          return template.file(data.content, 'deleteble')
+          return template.file(data, 'deleteble')
         default:
           return findLink(findAnswer(data.message))
       }
     },
-    preview: (data) => {
-      return `
-        <div class="link-preview">
-          <a href="${data.link}" target="_blank">
-            <div class="link-title">${data.title}</div>
-            ${data.description ? `<div class="link-text">${data.description}</div>` : ''}
-            ${data.image ? `<div class="link-image" style="background-image: url('${data.image}')"></div>` : ''}
-          </a>
-        </div>
-      `;
-    },
     quote: (data) => {
       const type = checkAudio(data.message) ? 'voice'
+        : checkVideo(data.content) ? 'video'
+        : checkGif(data.content) ? 'image'
         : checkFile(data.content) ? 'file'
         : checkImg(data.content) ? 'image'
-        : checkVideo(data.content) ? 'video'
-        : 'text';
+        : 'text'
       return `
         <div class="quote">
           ${data.username ? `<div class="message_quote_user">${data.username}</div>` : ''}
-          ${template.messageContent(data, type)}
+          ${template.quoteContent(data, type)}
         </div>
       `;
     },
     quoteContent: (data, type) => {
-      switch(type) {
+      switch (type) {
         case 'image':
-          return `<div class="message_quote_text media">
+          return `
+            <div class="message_quote_text media">
               <a href="${extractLink(data.content)}" data-fancybox target="_blank">
                 <img src="${extractLink(data.content)}" class="image" alt="">
               </a>
@@ -232,25 +236,25 @@ $(document).ready(() => {
         case 'voice':
           return '<div class="message_quote_text">Voice message</div>'
         case 'file':
-          return template.file(data.content)
+          return template.file(data)
         default:
           return `<div class="message_quote_text">${findLink(findAnswer(data.message))}</div>`
       }
     },
-    file: (url, type = null) => {
+    file: (data, type = null) => {
       return `
-        <a class="file" href="${url}" download>
+        <a class="file" href="${data.content}" download>
           <div class="file-side">
             <div
               class="file-icon ${type || ''}"
-              data-src="${extractLink(url)}" 
-              data-url="${url.substring(url.lastIndexOf('/') + 1)}"
-              ${checkImg(url)? `style="background-image: url('${url}');"` : ''}
-            >${!checkImg(url)? '<i class="material-icons">insert_drive_file</i>' : ''}</div>
+              data-src="${extractLink(data.content)}" 
+              data-url="${data.content.substring(data.content.lastIndexOf('/') + 1)}"
+              ${checkImg(data.content) ? `style="background-image: url('${data.content}');"` : ''}
+            >${!checkImg(data.content) ? '<i class="material-icons">insert_drive_file</i>' : ''}</div>
           </div>
           <div class="file-info">
             <span>File</span>
-            <span>${url.substr(url.lastIndexOf('.'))}</span>
+            <span>${data.content.substr(data.content.lastIndexOf('.'))} / ${formatBytes(data.fileInfo)}</span>
           </div>
         </a>
       `;
@@ -265,8 +269,19 @@ $(document).ready(() => {
           </div>
           <div class="audio-wave wave_${url.substring(url.lastIndexOf('/') + 1).replace('.oga', '')}"></div>
           <div class="audio-time">
-              <span class="duration">0:00</span>
+            <span class="duration">0:00</span>
           </div>
+        </div>
+      `;
+    },
+    preview: (data) => {
+      return `
+        <div class="link-preview">
+          <a href="${data.link}" target="_blank">
+            <div class="link-title">${data.title}</div>
+            ${data.description ? `<div class="link-text">${data.description}</div>` : ''}
+            ${data.image ? `<div class="link-image" style="background-image: url('${data.image}')"></div>` : ''}
+          </a>
         </div>
       `;
     },
@@ -293,9 +308,9 @@ $(document).ready(() => {
   };
 
   // Handler: Write new message
-  const write = (message = null, content = null, quoteId = null) => {
-    let user = USER || Username.val().replace(/(<([^>]+)>)/ig, '').trim();
-    const userphoto = localStorage.getItem('userphoto') || null;
+  const write = (message = null, content = null, quoteId = null, fileInfo = null) => {
+    let user = USER || Username.val().replace(/(<([^>]+)>)/ig, '').trim()
+    const userphoto = localStorage.getItem('userphoto') || null
 
     USER ? (
       user = USER
@@ -330,7 +345,8 @@ $(document).ready(() => {
         username: user,
         userphoto,
         time: Date.now(),
-        quoteId
+        quoteId,
+        fileInfo
       }),
       cancelQuote()
     } else warning('Enter name', 'error')
@@ -374,8 +390,8 @@ $(document).ready(() => {
 
   // Handler: Uploading user avatar
   const uploadAvatar = (file) => {
-    const formData = new FormData;
-    formData.append('avatar', file)
+    const formData = new FormData
+    formData.append('avatar', file),
     fetch('/upload/avatar', {
       method: 'POST',
       body: formData
@@ -397,16 +413,16 @@ $(document).ready(() => {
 
   // Handler: Uploading attachment
   const uploadAttachment = (file, param) => {
-    const formData = new FormData;
-    formData.append(param.name, file)
+    const formData = new FormData
+    formData.append(param.name, file),
     fetch('/upload/' + param.name, {
       method: 'POST',
       body: formData
     })
     .then(response => response.json())
     .then(data => {
-      let quoteId;
-      let text;
+      let quoteId
+      let text
       !data.error ? (
         QuoteForm.hasClass('active') && (
           quoteId = QuoteForm.find('.quoteId').text()
@@ -418,9 +434,9 @@ $(document).ready(() => {
           (text.length > 1500) && (
             text = text.substr(0, 1500)
           ),
-          write(text, data.file, quoteId)
+          write(text, data.file, quoteId, data.size)
         )
-      ) : warning('Failed to upload', 'error')
+      ) : warning(data.error, 'error')
     })
     .catch(err => console.error(err))
   };
@@ -433,8 +449,8 @@ $(document).ready(() => {
 
   // Handler: Play/Pause voice message
   const playPause = (index, initial = index) => {
-    const curSrc = player.currentSrc.replace(/.+[\\\/]/, '');
-    const dataSrc = encodeURI($('.audio').eq(index).find('.control').data('src').replace(/.+[\\\/]/, ''));
+    const curSrc = player.currentSrc.replace(/.+[\\/]/, '')
+    const dataSrc = encodeURI($('.audio').eq(index).find('.control').data('src').replace(/.+[\\/]/, ''))
 
     initial === index ? (
       player.paused ? (
@@ -459,12 +475,12 @@ $(document).ready(() => {
 
   // Handler: Play next voice message
   const next = () => {
-    index = (index + 1);
+    index = (index + 1)
     if (index > voiceList.length - 1) {
       player.pause()
       return
     }
-    player.src = voiceList[index];
+    player.src = voiceList[index],
     player.play()
       .then(() => meta(
         $('.audio').eq(index).parents('.message_block_right').find('.message_user').text()
@@ -474,7 +490,7 @@ $(document).ready(() => {
 
   // Handler: Set browser media metadata
   const meta = (title) => {
-    let cover;
+    let cover
     cover = $('.audio').eq(index).parents('.message_item').find('.message_avatar')
       .css('background-image').replace(/^url\(['"](.+)['"]\)/, '$1'),
     cover === 'none' && (
@@ -585,7 +601,7 @@ $(document).ready(() => {
   };
 
   // UI: Uploading voice message
-  let recorder
+  let recorder;
   VoiceInput.on('click', async () => {
     RecordingBar.removeClass('none')
     try {
@@ -627,7 +643,7 @@ $(document).ready(() => {
 
   // UI: Play/Pause voice message
   $(document).on('click', '.audio-btn', function() {
-    const initial = index;
+    const initial = index
     index = $('.audio-btn').index(this),
     playPause(index, initial)
   }),
@@ -644,17 +660,17 @@ $(document).ready(() => {
   }),
 
   player.addEventListener('timeupdate', () => {
-    const curTime = player.currentTime;
-    const duration = player.duration;
+    const curTime = player.currentTime
+    const duration = player.duration
     $('.playing .duration').text(toHHMMSS(curTime)),
     $('.playing').find('wave').eq(1).css('width', `${(curTime + 0.25) / duration * 100}%`)
   }),
 
   // UI: Seeking on voice bar
   $(document).on('click', '.playing wave', function(e) {
-    const offset = e.pageX - $(this).offset().left;
-    const duration = player.duration;
-    const width = $(this).width();
+    const offset = e.pageX - $(this).offset().left
+    const duration = player.duration
+    const width = $(this).width()
     duration && (
       player.currentTime = (offset / width) * duration
     )
@@ -714,15 +730,15 @@ $(document).ready(() => {
 
   // UI: Send message via button
   SendMessage.on('click', () => {
-    let text = Message.val().replace(/(<([^>]+)>)/ig, '').trim();
+    let text = Message.val().replace(/(<([^>]+)>)/ig, '').trim()
     if (text.length > 1) {
       (text.length > 1500) && (
         text = text.substr(0, 1500)
-      );
-      const value = text.split(' ');
-      const quoteActive = QuoteForm.hasClass('active');
-      let content;
-      let quoteId;
+      )
+      const value = text.split(' ')
+      const quoteActive = QuoteForm.hasClass('active')
+      let content
+      let quoteId
       quoteActive && (
         quoteId = QuoteForm.find('.quoteId').text()
       ),
@@ -738,15 +754,15 @@ $(document).ready(() => {
 
   // UI: Send message via ENTER key
   $(document).on('keyup', '#nameInput, #textInput', (e) => {
-    let text = Message.val().replace(/(<([^>]+)>)/ig, '').trim();
+    let text = Message.val().replace(/(<([^>]+)>)/ig, '').trim()
     if (text.length > 1 && e.which === 13) {
       (text.length > 1500) && (
         text = text.substr(0, 1500)
-      );
-      const value = text.split(' ');
-      const quoteActive = QuoteForm.hasClass('active');
-      let content;
-      let quoteId;
+      )
+      const value = text.split(' ')
+      const quoteActive = QuoteForm.hasClass('active')
+      let content
+      let quoteId
       quoteActive && (
         quoteId = QuoteForm.find('.quoteId').text()
       ),
@@ -779,10 +795,10 @@ $(document).ready(() => {
 
   // UI: Itit quote form
   $(document).on('click', '.quote_btn', function() {
-    const media = $(this).parent().find('.message_block_right').hasClass('media');
-    const video = $(this).parent().find('.video').attr('src');
-    const audio = $(this).parent().find('.control').data('src');
-    const file = $(this).parent().find('.file-icon').data('src');
+    const media = $(this).parent().find('.message_block_right').hasClass('media')
+    const video = $(this).parent().find('.video').attr('src')
+    const audio = $(this).parent().find('.control').data('src')
+    const file = $(this).parent().find('.file-icon').data('src')
     QuoteForm.addClass('active'),
     media ? (
       $('.quote_form .message_user').addClass('none'),
@@ -828,8 +844,8 @@ $(document).ready(() => {
       $('.empty-results').remove(),
       (document.querySelector('#chat').children.length === 0) && (
         $.each(data, (i) => {
-          const type = checkImg(data[i].content) || checkVideo(data[i].content) ? 'media' : null;
-          const my = data[i].username === USER;
+          const type = checkImg(data[i].content) || checkVideo(data[i].content) ? 'media' : null
+          const my = data[i].username === USER
           Chat.prepend(
             template.message({
               id: data[i]._id,
@@ -839,6 +855,7 @@ $(document).ready(() => {
               content: data[i].content,
               time: data[i].time,
               quote: data[i].quote,
+              fileInfo: data[i].fileInfo,
               type,
               my
             })
@@ -863,10 +880,10 @@ $(document).ready(() => {
   // UI: Adding new message
   socket.on('new_message', (data) => {
     const type = checkImg(data.content) || checkVideo(data.content) ? 'media' : null;
-    const my = data.username === USER;
-    const sound = new Audio('./sounds/new_in.wav');
-    const icon = data.userphoto ? window.location.href + 'img/users/' + data.userphoto : null;
-    const message = checkImg(data.content) ? 'Image' : checkVideo(data.content) ? 'Video' : data.message;
+    const my = data.username === USER
+    const sound = new Audio('./sounds/new_in.wav')
+    const icon = data.userphoto ? window.location.href + 'img/users/' + data.userphoto : null
+    const message = checkImg(data.content) ? 'Image' : checkVideo(data.content) ? 'Video' : data.message
     const image = checkImg(data.content) ? data.content : null;
     (document.body.scrollHeight - (window.scrollY + window.innerHeight) < 150) && (
       $('html, body').animate({ scrollTop: $(document).height() }, 100)
@@ -897,6 +914,7 @@ $(document).ready(() => {
         content: data.content,
         time: data.time,
         quote: data.quote,
+        fileInfo: data.fileInfo,
         type,
         my
       })
@@ -916,14 +934,14 @@ $(document).ready(() => {
 
   // UI: Load more old messages from DB
   socket.on('more', (data) => {
-    let position = 0;
+    let position = 0
     let initH = 0;
     (data.length > 0) ? (
       $('.empty-results').remove(),
       (document.querySelector('#chat').children.length !== 0) && (
         $.each(data, (i) => {
-          const type = checkImg(data[i].content) || checkVideo(data[i].content) ? 'media' : null;
-          const my = data[i].username === USER;
+          const type = checkImg(data[i].content) || checkVideo(data[i].content) ? 'media' : null
+          const my = data[i].username === USER
           initH = $('.message_item').outerHeight(true),
           position += initH,
           Chat.prepend(
@@ -935,6 +953,7 @@ $(document).ready(() => {
               content: data[i].content,
               time: data[i].time,
               quote: data[i].quote,
+              fileInfo: data[i].fileInfo,
               type,
               my
             })
@@ -977,7 +996,7 @@ $(document).ready(() => {
     typings = data.typings
     if (typings.length < 1) return
 
-    const items = typings.filter(item => item !== USER);
+    const items = typings.filter(item => item !== USER)
     let typers;
     (typings.length < 3)
       ? (

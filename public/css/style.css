@@ -309,13 +309,16 @@ header {
   align-items: center;
   justify-content: center;
   width: 62px;
-  border-radius: 50px;
   cursor: pointer;
+  user-select: none;
 }
 .attach i {
   padding: 8px;
   border-radius: 50px;
   transition: all .1s ease-in;
+}
+.attach.image, .attach.file {
+  padding-bottom: 4px;
 }
 .attach span {
   color: var(--secondary-color);
@@ -350,6 +353,7 @@ header {
   padding: 0 8px 0 16px;
   height: 40px;
   width: calc(100% - 54px);
+  user-select: none;
   z-index: 4;
 }
 .recording_actions {
@@ -709,7 +713,7 @@ header {
   100% {background-color: var(--default-transparent);}
 }
 
-.audio, .file {
+.audio {
   position: relative;
   display: flex;
   align-items: center;

@@ -21,6 +21,9 @@ const MessageSchema = new Schema({
   },
   quote: {
     type: String
+  },
+  fileInfo: {
+    type: String
   }
 })
 
