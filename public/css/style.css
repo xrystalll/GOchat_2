@@ -713,7 +713,7 @@ header {
   100% {background-color: var(--default-transparent);}
 }
 
-.audio {
+.audio, .music, .message_text .file {
   position: relative;
   display: flex;
   align-items: center;
@@ -724,7 +724,7 @@ header {
 .audio-side, .file-side {
   margin-right: 8px;
 }
-.audio-btn {
+.audio-btn, .music-btn {
   position: relative;
   background: var(--accent-color);
   background-size: cover;
@@ -737,7 +737,8 @@ header {
   width: 38px;
   height: 38px;
 }
-.audio .control:after, .audio.playing .control:after {
+.audio .control:after, .audio.playing .control:after,
+.music .control:after, .music.playing .control:after {
   font-family: 'Material Icons';
   content: 'play_arrow';
   color: var(--default-white);
@@ -749,7 +750,8 @@ header {
   width: 38px;
   height: 38px;
 }
-.audio.playing:hover .control:after, .audio.playing .control:after {
+.audio.playing:hover .control:after, .audio.playing .control:after,
+.music.playing:hover .control:after, .music.playing .control:after {
   content: 'pause';
 }
 .audio-wave {
@@ -771,6 +773,20 @@ wave {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.bar {
+  width: 140px;
+  overflow: hidden;
+  background: var(--default-transparent-02);
+  height: 4px;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.progress {
+  width: 0;
+  background: var(--accent-color);
+  border-radius: 2px;
+  height: 4px;
 }
 
 .file-icon {

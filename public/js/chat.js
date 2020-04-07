@@ -35,9 +35,12 @@ $(document).ready(() => {
     )
   }
 
-  const player = new Audio;
+  const voicePlayer = new Audio;
+  const musicPlayer = new Audio;
   const voiceList = [];
-  let index = 0;
+  const musicList = [];
+  let voiceIndex = 0;
+  let musicIndex = 0;
 
   const warning = (message, type = 'info') => {
     const id = Math.random().toString(36).substr(2, 8)
@@ -124,7 +127,9 @@ $(document).ready(() => {
 
   const checkVideo = (url) => url.toLowerCase().match(/\.(mp4|webm|3gp|avi)$/) != null;
 
-  const checkAudio = (url) => url.toLowerCase().match(/\.(oga)$/) != null;
+  const checkAudio = (url) => url.toLowerCase().match(/\.(mp3|flac|wav)$/) != null;
+
+  const checkVoice = (url) => url.toLowerCase().match(/\.(oga)$/) != null;
 
   const checkUrl = (url) => url.toLowerCase().match(/(https?:\/\/[^\s]+)/g) != null;
 
@@ -152,7 +157,8 @@ $(document).ready(() => {
 
   const template = {
     message: (data) => {
-      const type = checkAudio(data.message) ? 'voice'
+      const type = checkVoice(data.message) ? 'voice'
+        : checkAudio(data.content) ? 'music'
         : checkVideo(data.content) ? 'video'
         : checkGif(data.content) ? 'image'
         : checkFile(data.content) ? 'file'
@@ -202,6 +208,8 @@ $(document).ready(() => {
           return `<video src="${extractLink(data.content)}" class="video" preload="true" loop controls></video>`
         case 'voice':
           return template.voice(data.message)
+        case 'music':
+          return template.music(data.content)
         case 'file':
           return template.file(data, 'deleteble')
         default:
@@ -209,7 +217,8 @@ $(document).ready(() => {
       }
     },
     quote: (data) => {
-      const type = checkAudio(data.message) ? 'voice'
+      const type = checkVoice(data.message) ? 'voice'
+        : checkAudio(data.content) ? 'music'
         : checkVideo(data.content) ? 'video'
         : checkGif(data.content) ? 'image'
         : checkFile(data.content) ? 'file'
@@ -235,6 +244,8 @@ $(document).ready(() => {
           return '<div class="message_quote_text">Video</div>'
         case 'voice':
           return '<div class="message_quote_text">Voice message</div>'
+        case 'music':
+          return '<div class="message_quote_text">Music</div>'
         case 'file':
           return template.file(data)
         default:
@@ -268,6 +279,25 @@ $(document).ready(() => {
             </div>
           </div>
           <div class="audio-wave wave_${url.substring(url.lastIndexOf('/') + 1).replace('.oga', '')}"></div>
+          <div class="audio-time">
+            <span class="duration">0:00</span>
+          </div>
+        </div>
+      `;
+    },
+    music: (url) => {
+      return `
+        <div class="music">
+          <div class="audio-side">
+            <div class="music-btn">
+              <div class="control deleteble" data-src="${extractLink(url)}" data-url="${url.substring(url.lastIndexOf('/') + 1)}"></div>
+            </div>
+          </div>
+          <div class="audio-wave">
+            <div class="bar">
+              <div class="progress"></div>
+            </div>
+          </div>
           <div class="audio-time">
             <span class="duration">0:00</span>
           </div>
@@ -448,57 +478,111 @@ $(document).ready(() => {
   };
 
   // Handler: Play/Pause voice message
-  const playPause = (index, initial = index) => {
-    const curSrc = player.currentSrc.replace(/.+[\\/]/, '')
+  const voicePlayPause = (index, initial = voiceIndex) => {
+    const curSrc = voicePlayer.currentSrc.replace(/.+[\\/]/, '')
     const dataSrc = encodeURI($('.audio').eq(index).find('.control').data('src').replace(/.+[\\/]/, ''))
 
     initial === index ? (
-      player.paused ? (
+      voicePlayer.paused ? (
         curSrc === dataSrc ? (
-          player.play()
+          voicePlayer.play()
         ) : (
-          player.src = voiceList[index],
-          player.play()
+          voicePlayer.src = voiceList[index],
+          voicePlayer.play()
             .then(() => meta(
-              $('.audio').eq(index).parents('.message_block_right').find('.message_user').text()
+              $('.audio').eq(index).parents('.message_block_right').find('.message_user').text(),
+              'voice'
             ))
         )
-      ) : player.pause()
+      ) : voicePlayer.pause()
     ) : (
-      player.src = voiceList[index],
-      player.play()
+      voicePlayer.src = voiceList[index],
+      voicePlayer.play()
         .then(() => meta(
-          $('.audio').eq(index).parents('.message_block_right').find('.message_user').text()
+          $('.audio').eq(index).parents('.message_block_right').find('.message_user').text(),
+          'voice'
         ))
     )
   };
 
   // Handler: Play next voice message
-  const next = () => {
-    index = (index + 1)
-    if (index > voiceList.length - 1) {
-      player.pause()
+  const voiceNext = () => {
+    voiceIndex = (voiceIndex + 1)
+    if (voiceIndex > voiceList.length) {
+      voicePlayer.pause()
       return
     }
-    player.src = voiceList[index],
-    player.play()
+    voicePlayer.src = voiceList[voiceIndex],
+    voicePlayer.play()
       .then(() => meta(
-        $('.audio').eq(index).parents('.message_block_right').find('.message_user').text()
+        $('.audio').eq(voiceIndex).parents('.message_block_right').find('.message_user').text(),
+        'voice'
       )),
     $('.audio').not('playing').removeClass('playing')
   };
 
+
+  // Handler: Play/Pause music
+  const musicPlayPause = (index, initial = musicIndex) => {
+    const curSrc = musicPlayer.currentSrc.replace(/.+[\\/]/, '')
+    const dataSrc = encodeURI($('.music').eq(index).find('.control').data('src').replace(/.+[\\/]/, ''))
+
+    initial === index ? (
+      musicPlayer.paused ? (
+        curSrc === dataSrc ? (
+          musicPlayer.play()
+        ) : (
+          musicPlayer.src = musicList[index],
+          musicPlayer.play()
+            .then(() => meta(
+              $('.music').eq(index).parents('.message_block_right').find('.message_user').text(),
+              'music'
+            ))
+        )
+      ) : musicPlayer.pause()
+    ) : (
+      musicPlayer.src = musicList[index],
+      musicPlayer.play()
+        .then(() => meta(
+          $('.music').eq(index).parents('.message_block_right').find('.message_user').text(),
+          'music'
+        ))
+    )
+  };
+
+  // Handler: Play next music
+  const musicNext = () => {
+    musicIndex = (musicIndex + 1)
+    if (musicIndex > musicList.length) {
+      musicPlayer.pause()
+      return
+    }
+    musicPlayer.src = musicList[musicIndex],
+    musicPlayer.play()
+      .then(() => meta(
+        $('.music').eq(musicIndex).parents('.message_block_right').find('.message_user').text(),
+        'music'
+      )),
+    $('.music').not('playing').removeClass('playing')
+  };
+
   // Handler: Set browser media metadata
-  const meta = (title) => {
+  const meta = (title, type) => {
     let cover
-    cover = $('.audio').eq(index).parents('.message_item').find('.message_avatar')
-      .css('background-image').replace(/^url\(['"](.+)['"]\)/, '$1'),
+    type === 'voice' ? (
+      cover = $('.audio').eq(voiceIndex).parents('.message_item').find('.message_avatar')
+        .css('background-image').replace(/^url\(['"](.+)['"]\)/, '$1')
+    ) : (
+      cover = $('.music').eq(musicIndex).parents('.message_item').find('.message_avatar')
+        .css('background-image').replace(/^url\(['"](.+)['"]\)/, '$1')
+    )
     cover === 'none' && (
       cover = window.location.href + 'images/icon_192.png'
-    ),
+    )
+    const text = type === 'voice' ? 'Voice message' : 'Music'
     navigator.mediaSession.metadata = new MediaMetadata({
       title,
-      artist: 'Voice message',
+      artist: text,
       artwork: [{ src: cover }]
     })
   };
@@ -643,25 +727,26 @@ $(document).ready(() => {
 
   // UI: Play/Pause voice message
   $(document).on('click', '.audio-btn', function() {
-    const initial = index
-    index = $('.audio-btn').index(this),
-    playPause(index, initial)
+    musicPlayer.pause()
+    const initial = voiceIndex
+    voiceIndex = $('.audio-btn').index(this),
+    voicePlayPause(voiceIndex, initial)
   }),
 
-  player.onended = () => next(),
+  voicePlayer.onended = () => voiceNext(),
 
-  player.addEventListener('pause', () => {
+  voicePlayer.addEventListener('pause', () => {
     $('.audio').removeClass('playing')
   }),
 
-  player.addEventListener('play', () => {
+  voicePlayer.addEventListener('play', () => {
     $('.audio').removeClass('playing'),
-    $('.audio').eq(index).addClass('playing')
+    $('.audio').eq(voiceIndex).addClass('playing')
   }),
 
-  player.addEventListener('timeupdate', () => {
-    const curTime = player.currentTime
-    const duration = player.duration
+  voicePlayer.addEventListener('timeupdate', () => {
+    const curTime = voicePlayer.currentTime
+    const duration = voicePlayer.duration
     $('.playing .duration').text(toHHMMSS(curTime)),
     $('.playing').find('wave').eq(1).css('width', `${(curTime + 0.25) / duration * 100}%`)
   }),
@@ -669,10 +754,49 @@ $(document).ready(() => {
   // UI: Seeking on voice bar
   $(document).on('click', '.playing wave', function(e) {
     const offset = e.pageX - $(this).offset().left
-    const duration = player.duration
+    const duration = voicePlayer.duration
     const width = $(this).width()
     duration && (
-      player.currentTime = (offset / width) * duration
+      voicePlayer.currentTime = (offset / width) * duration
+    )
+  }),
+
+
+  // UI: Play/Pause music
+  $(document).on('click', '.music-btn', function() {
+    voicePlayer.pause()
+    const initial = musicIndex
+    musicIndex = $('.music-btn').index(this),
+    musicPlayPause(musicIndex, initial)
+  }),
+
+  musicPlayer.onended = () => musicNext(),
+
+  musicPlayer.addEventListener('pause', () => {
+    $('.music').removeClass('playing')
+  }),
+
+  musicPlayer.addEventListener('play', () => {
+    $('.music').removeClass('playing'),
+    $('.music').eq(musicIndex).addClass('playing')
+  }),
+
+  musicPlayer.addEventListener('timeupdate', () => {
+    const curTime = musicPlayer.currentTime
+    const duration = musicPlayer.duration
+    $('.playing .duration').text(toHHMMSS(curTime)),
+    $('.playing .progress').stop(true, true).animate({
+      'width': `${(curTime + .25) / duration * 100}%`
+    }, 200, 'linear')
+  }),
+
+  // UI: Seeking on music bar
+  $(document).on('click', '.playing .bar', function(e) {
+    const offset = e.pageX - $(this).offset().left
+    const duration = musicPlayer.duration
+    const width = $(this).width()
+    duration && (
+      musicPlayer.currentTime = (offset / width) * duration
     )
   }),
 
@@ -812,9 +936,9 @@ $(document).ready(() => {
     (video && checkVideo(video)) ? (
       $('.quote_form .message_user').removeClass('none'),
       $('.quote_form .message_text').removeClass('media').empty().text('Video')
-    ) : (audio && checkAudio(audio)) ? (
+    ) : (audio && checkVoice(audio) || checkAudio(audio)) ? (
       $('.quote_form .message_user').removeClass('none'),
-      $('.quote_form .message_text').removeClass('media').empty().text('Voice message')
+      $('.quote_form .message_text').removeClass('media').empty().text('Audio')
     ) : (file && checkFile(file)) ? (
       $('.quote_form .message_user').removeClass('none'),
       $('.quote_form .message_text').removeClass('media').empty().text('File')
@@ -865,12 +989,16 @@ $(document).ready(() => {
             id: data[i]._id
           }),
           data[i].quote && quoteInit(data[i]),
-          checkAudio(data[i].message) && (
+          checkVoice(data[i].message) && (
             voiceList.push(data[i].message),
             initWave(data[i].message)
+          ),
+          checkAudio(data[i].content) && (
+            musicList.push(data[i].content)
           )
         }),
-        voiceList.sort()
+        voiceList.sort(),
+        musicList.sort()
       ),
       $('html, body').animate({ scrollTop: $(document).height() }, 0)
     ) : Chat.html(template.error('No messages yet'))
@@ -924,10 +1052,14 @@ $(document).ready(() => {
       id: data._id
     }),
     data.quote && quoteInit(data),
-    checkAudio(data.message) && (
+    checkVoice(data.message) && (
       voiceList.push(data.message),
       voiceList.sort(),
       initWave(data.message)
+    ),
+    checkAudio(data.content) && (
+      musicList.push(data.content),
+      musicList.sort()
     )
   }),
 
@@ -963,13 +1095,17 @@ $(document).ready(() => {
             id: data[i]._id
           }),
           data[i].quote && quoteInit(data[i]),
-          checkAudio(data[i].message) && (
+          checkVoice(data[i].message) && (
             voiceList.push(data[i].message),
             initWave(data[i].message)
+          ),
+          checkAudio(data[i].content) && (
+            musicList.push(data[i].content)
           )
         }),
         window.scrollTo(0, position),
-        voiceList.sort()
+        voiceList.sort(),
+        musicList.sort()
       )
     ) : end = true
   }),
@@ -1038,13 +1174,22 @@ $(document).ready(() => {
       id: $(this).parent().data('id'),
       file: $(this).parent().find('.message_text .deleteble').data('url')
     })
-    if ($(this).parent().find('.audio').length === 1) {
-      const i = voiceList.indexOf($(this).parent().find('.control').data('src'))
-      i > -1 && voiceList.splice(i, 1),
-      (player.currentSrc.substring(player.currentSrc.lastIndexOf('/') + 1) === $(this).parent().find('.control').data('url')) && next()
-    }
   }),
-  socket.on('delete', (data) => $(`.message_item[data-id="${data.id}"]`).remove()),
+  socket.on('delete', (data) => {
+    const self = $(`.message_item[data-id="${data.id}"]`)
+    if (self.find('.audio').length === 1) {
+      const i = voiceList.indexOf(self.find('.control').data('src'))
+      i > -1 && voiceList.splice(i, 1),
+      (voicePlayer.currentSrc.substring(voicePlayer.currentSrc.lastIndexOf('/') + 1) === self.find('.control').data('url')) && voiceNext()
+    }
+    if (self.find('.music').length === 1) {
+      const i = musicList.indexOf(self.find('.control').data('src'))
+      i > -1 && musicList.splice(i, 1),
+      (musicPlayer.currentSrc.substring(musicPlayer.currentSrc.lastIndexOf('/') + 1) === self.find('.control').data('url')) && musicNext()
+    }
+
+    self.remove()
+  }),
 
 
   socket.on('cleared', () => {
