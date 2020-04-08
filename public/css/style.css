@@ -656,7 +656,7 @@ header {
   align-items: center;
   height: 48px;
   box-shadow: rgba(0, 0, 0, .15) 0 0 3px 1px;
-  z-index: 9;
+  z-index: 3;
 }
 .quote_form.active {
   display: flex;

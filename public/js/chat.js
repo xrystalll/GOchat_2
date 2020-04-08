@@ -1,55 +1,57 @@
+'use strict'
 $(document).ready(() => {
-  const socket = io();
+  const socket = io()
 
-  const Username = $('#nameInput');
-  const Message = $('#textInput');
-  const SendMessage = $('#send_message');
-  const Chat = $('#chat');
-  const MessageForm = $('.message_form');
-  const Status = $('#status');
-  const AvatarInput = $('#avatarInput');
-  const ImageInput = $('#imageInput');
-  const FileInput = $('#fileInput');
-  const AttachBtn = $('.attach_icon');
-  const AttachBar = $('.image_or_file');
-  const VoiceInput = $('#voiceInput');
-  const Attachment = $('.attachment');
-  const RecordingBar = $('.recording_bar');
-  const RecordingTime = $('.recording_time');
-  const CancelRec = $('.cancel_rec');
-  const SendRec = $('.send_rec');
-  const QuoteForm = $('.quote_form');
-  const CancelQuote = $('.cancel_quote');
-  const NotifSetting = $('.notif_setting');
-  const Online = $('.online');
-  const OnlineCount = $('.online_count');
-  const limit = 10;
-  let offset = 0;
-  let end = false;
-  let typings = [];
-  let USER = localStorage.getItem('username');
+  const Username = $('#nameInput')
+  const Message = $('#textInput')
+  const SendMessage = $('#send_message')
+  const Chat = $('#chat')
+  const MessageForm = $('.message_form')
+  const Status = $('#status')
+  const AvatarInput = $('#avatarInput')
+  const ImageInput = $('#imageInput')
+  const FileInput = $('#fileInput')
+  const AttachBtn = $('.attach_icon')
+  const AttachBar = $('.image_or_file')
+  const VoiceInput = $('#voiceInput')
+  const Attachment = $('.attachment')
+  const RecordingBar = $('.recording_bar')
+  const RecordingTime = $('.recording_time')
+  const CancelRec = $('.cancel_rec')
+  const SendRec = $('.send_rec')
+  const QuoteForm = $('.quote_form')
+  const CancelQuote = $('.cancel_quote')
+  const NotifSetting = $('.notif_setting')
+  const Online = $('.online')
+  const OnlineCount = $('.online_count')
+  const limit = 10
+  let offset = 0
+  let end = false
+  let typings = []
+  let USER = localStorage.getItem('username')
   if (USER !== null) {
-    USER = USER.replace(/(<([^>]+)>)/ig, '').trim(),
-    (USER.length > 24) && (
+    USER = USER.replace(/(<([^>]+)>)/ig, '').trim()
+    if (USER.length > 24) {
       USER = USER.substr(0, 24)
-    )
+    }
   }
 
-  const voicePlayer = new Audio;
-  const musicPlayer = new Audio;
-  const voiceList = [];
-  const musicList = [];
-  let voiceIndex = 0;
-  let musicIndex = 0;
+  const sound = new Audio('./sounds/new_in.wav')
+  const voicePlayer = new Audio()
+  const musicPlayer = new Audio()
+  const voiceList = []
+  const musicList = []
+  let voiceIndex = 0
+  let musicIndex = 0
 
   const warning = (message, type = 'info') => {
     const id = Math.random().toString(36).substr(2, 8)
-    $('body').append(`<div class="alert ${type}" data-id="${id}">${message}</div>`),
-    $(`.alert[data-id="${id}"]`).fadeIn(800).fadeOut(3000),
+    $('body').append(`<div class="alert ${type}" data-id="${id}">${message}</div>`)
+    $(`.alert[data-id="${id}"]`).fadeIn(800).fadeOut(3000)
     setTimeout(() => {
       $(`.alert[data-id="${id}"]`).remove()
     }, 3800)
-  };
+  }
 
   const timeFormat = (timestamp, type = 'full') => {
     const d = new Date()
@@ -89,7 +91,7 @@ $(document).ready(() => {
         return `${date} ${month}${thisYear}`
       }
     }
-  };
+  }
 
   const toHHMMSS = (sec) => {
     const secNum = parseInt(sec, 10)
@@ -101,7 +103,7 @@ $(document).ready(() => {
     if (seconds < 10) { seconds = '0' + seconds }
 
     return hours + minutes + ':' + seconds
-  };
+  }
 
   const counter = (count) => {
     if (count === 0) return 0
@@ -109,7 +111,7 @@ $(document).ready(() => {
     if (count >= 1e3 && count < 1e6) return `${+(count / 1e3).toFixed(1)}K`
     if (count >= 1e6 && count < 1e9) return `${+(count / 1e6).toFixed(1)}M`
     if (count >= 1e9 && count < 1e12) return `${+(count / 1e9).toFixed(1)}B`
-  };
+  }
 
   const formatBytes = (bytes, decimals) => {
     if (bytes === 0) return '0 bytes'
@@ -119,51 +121,51 @@ $(document).ready(() => {
     const sizes = ['bytes', 'Kb', 'Mb', 'Gb']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
-  };
+  }
 
-  const checkImg = (url) => url.toLowerCase().match(/\.(jpeg|jpg|png|webp|gif|bmp)$/) != null;
+  const checkImg = (url) => url.toLowerCase().match(/\.(jpeg|jpg|png|webp|gif|bmp)$/) != null
 
-  const checkGif = (url) => url.toLowerCase().match(/\.(gif)$/) != null;
+  const checkGif = (url) => url.toLowerCase().match(/\.(gif)$/) != null
 
-  const checkVideo = (url) => url.toLowerCase().match(/\.(mp4|webm|3gp|avi)$/) != null;
+  const checkVideo = (url) => url.toLowerCase().match(/\.(mp4|webm|3gp|avi)$/) != null
 
-  const checkAudio = (url) => url.toLowerCase().match(/\.(mp3|flac|wav)$/) != null;
+  const checkAudio = (url) => url.toLowerCase().match(/\.(mp3|flac|wav)$/) != null
 
-  const checkVoice = (url) => url.toLowerCase().match(/\.(oga)$/) != null;
+  const checkVoice = (url) => url.toLowerCase().match(/\.(oga)$/) != null
 
-  const checkUrl = (url) => url.toLowerCase().match(/(https?:\/\/[^\s]+)/g) != null;
+  const checkUrl = (url) => url.toLowerCase().match(/(https?:\/\/[^\s]+)/g) != null
 
-  const checkFile = (url) => url.toLowerCase().match(/files\/[file]+/gi) != null;
+  const checkFile = (url) => url.toLowerCase().match(/files\/[file]+/gi) != null
 
-  const findLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '<a class="link" href="$1" target="_blank" title="Open in new tab">$1</a>');
+  const findLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '<a class="link" href="$1" target="_blank" title="Open in new tab">$1</a>')
 
   const extractLink = (text) => {
     const matches = text.match(/(https?:\/\/[^\s]+)/g)
 
     if (!matches) return text
     return matches[0]
-  };
+  }
 
-  const cutLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '');
+  const cutLink = (text) => text.replace(/(https?:\/\/[^\s]+)/g, '')
 
   const checkAnswer = (text, user) => {
     const matches = text.match(/@[a-z0-9а-я-_]+/gi)
 
     if (matches && matches[0] === '@' + user) return true
     return false
-  };
+  }
 
-  const findAnswer = (text) => text.replace(/@[a-z0-9а-я-_]+/gi, (a) => `<span class="link atuser">${a}</span>`);
+  const findAnswer = (text) => text.replace(/@[a-z0-9а-я-_]+/gi, (a) => `<span class="link atuser">${a}</span>`)
 
   const template = {
     message: (data) => {
       const type = checkVoice(data.message) ? 'voice'
         : checkAudio(data.content) ? 'music'
-        : checkVideo(data.content) ? 'video'
-        : checkGif(data.content) ? 'image'
-        : checkFile(data.content) ? 'file'
-        : checkImg(data.content) ? 'image'
-        : 'text'
+          : checkVideo(data.content) ? 'video'
+            : checkGif(data.content) ? 'image'
+              : checkFile(data.content) ? 'file'
+                : checkImg(data.content) ? 'image'
+                  : 'text'
       if (type === 'file') data.type = null
       return `
         <div class="message_item${data.my ? ' my' : ''}" data-id="${data.id}" data-user="${data.user}">
@@ -190,7 +192,7 @@ $(document).ready(() => {
             : '<div class="quote_btn" title="Quote message"><i class="material-icons">reply</i></div>'
           }
         </div>
-      `;
+      `
     },
     messageContent: (data, type) => {
       switch (type) {
@@ -219,17 +221,17 @@ $(document).ready(() => {
     quote: (data) => {
       const type = checkVoice(data.message) ? 'voice'
         : checkAudio(data.content) ? 'music'
-        : checkVideo(data.content) ? 'video'
-        : checkGif(data.content) ? 'image'
-        : checkFile(data.content) ? 'file'
-        : checkImg(data.content) ? 'image'
-        : 'text'
+          : checkVideo(data.content) ? 'video'
+            : checkGif(data.content) ? 'image'
+              : checkFile(data.content) ? 'file'
+                : checkImg(data.content) ? 'image'
+                  : 'text'
       return `
         <div class="quote">
           ${data.username ? `<div class="message_quote_user">${data.username}</div>` : ''}
           ${template.quoteContent(data, type)}
         </div>
-      `;
+      `
     },
     quoteContent: (data, type) => {
       switch (type) {
@@ -268,7 +270,7 @@ $(document).ready(() => {
             <span>${data.content.substr(data.content.lastIndexOf('.'))} / ${formatBytes(data.fileInfo)}</span>
           </div>
         </a>
-      `;
+      `
     },
     voice: (url) => {
       return `
@@ -283,7 +285,7 @@ $(document).ready(() => {
             <span class="duration">0:00</span>
           </div>
         </div>
-      `;
+      `
     },
     music: (url) => {
       return `
@@ -302,7 +304,7 @@ $(document).ready(() => {
             <span class="duration">0:00</span>
           </div>
         </div>
-      `;
+      `
     },
     preview: (data) => {
       return `
@@ -313,7 +315,7 @@ $(document).ready(() => {
             ${data.image ? `<div class="link-image" style="background-image: url('${data.image}')"></div>` : ''}
           </a>
         </div>
-      `;
+      `
     },
     error: (message) => {
       return `
@@ -323,52 +325,52 @@ $(document).ready(() => {
             <div class="empty_top">${message}</div>
           </div>
         </div>
-      `;
+      `
     },
     icInfo: (color = '#fff', size = 24) => {
       return `
         <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24">
           <path d="M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z" fill="${color}"/>
         </svg>
-      `;
+      `
     },
     avatar: (user) => {
-      return `<label for="avatarInput" class="user" title="Set your photo">${user.slice(0, 1)}</label>`;
+      return `<label for="avatarInput" class="user" title="Set your photo">${user.slice(0, 1)}</label>`
     }
-  };
+  }
 
   // Handler: Write new message
   const write = (message = null, content = null, quoteId = null, fileInfo = null) => {
     let user = USER || Username.val().replace(/(<([^>]+)>)/ig, '').trim()
     const userphoto = localStorage.getItem('userphoto') || null
 
-    USER ? (
+    if (USER) {
       user = USER
-    ) : (
-      (user.length > 3) && (
-        (user.length > 24) && (
+    } else {
+      if (user.length > 3) {
+        if (user.length > 24) {
           user = user.substr(0, 24)
-        ),
-        localStorage.setItem('username', user),
-        USER = localStorage.getItem('username'),
-        socket.emit('set_username', { username: USER }),
-        Username.remove(),
-        Attachment.removeClass('none'),
-        NotifSetting.removeClass('none'),
-        Online.removeClass('none'),
+        }
+        localStorage.setItem('username', user)
+        USER = localStorage.getItem('username')
+        socket.emit('set_username', { username: USER })
+        Username.remove()
+        Attachment.removeClass('none')
+        NotifSetting.removeClass('none')
+        Online.removeClass('none')
         MessageForm.prepend(
           template.avatar(USER)
         )
-      )
-    );
+      }
+    }
 
     if (user.length > 3) {
       if (!content && !message) return warning('Enter message text', 'error')
 
-      Message.val(''),
-      MessageForm.removeClass('typed'),
-      Attachment.removeClass('none'),
-      socket.emit('stop_typing', { username: USER }),
+      Message.val('')
+      MessageForm.removeClass('typed')
+      Attachment.removeClass('none')
+      socket.emit('stop_typing', { username: USER })
       socket.emit('new_message', {
         message,
         content,
@@ -377,17 +379,17 @@ $(document).ready(() => {
         time: Date.now(),
         quoteId,
         fileInfo
-      }),
+      })
       cancelQuote()
     } else warning('Enter name', 'error')
-  };
+  }
 
   // Handler: Clear all messages
   const clear = (password) => {
-    Message.val(''),
-    MessageForm.removeClass('typed'),
+    Message.val('')
+    MessageForm.removeClass('typed')
     password ? socket.emit('clear', { password }) : warning('Enter password', 'error')
-  };
+  }
 
   // Handler: Fetch link preview
   const linkPreview = (props) => {
@@ -401,14 +403,14 @@ $(document).ready(() => {
         } else throw new Error('Failed to get link data')
       })
       .catch(err => console.error(err))
-  };
+  }
 
   // Handler: Init quote
   const quoteInit = (props) => {
     fetch(`/message?id=${props.quote}`)
       .then(response => response.json())
       .then(response => {
-        const data = response[0];
+        const data = response[0]
         $(`.message_item[data-id="${props._id}"] .quote_block`).html(
           data
             ? template.quote(data)
@@ -416,176 +418,177 @@ $(document).ready(() => {
         )
       })
       .catch(err => console.error(err))
-  };
+  }
 
   // Handler: Uploading user avatar
   const uploadAvatar = (file) => {
-    const formData = new FormData
-    formData.append('avatar', file),
+    const formData = new FormData()
+    formData.append('avatar', file)
     fetch('/upload/avatar', {
       method: 'POST',
       body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-      !data.error ? (
-        localStorage.setItem('userphoto', data.image),
-        $('.user').empty().css('background-image', `url('./users/images/${data.image}')`),
-        socket.emit('set_userphoto', {
-          username: USER,
-          userphoto: data.image
-        }),
-        warning('Successfully uploaded', 'success')
-      ) : warning('Failed to upload', 'error')
-    })
-    .catch(err => console.error(err))
-  };
+      .then(response => response.json())
+      .then(data => {
+        if (!data.error) {
+          localStorage.setItem('userphoto', data.image)
+          $('.user').empty().css('background-image', `url('./users/images/${data.image}')`)
+          socket.emit('set_userphoto', {
+            username: USER,
+            userphoto: data.image
+          })
+          warning('Successfully uploaded', 'success')
+        } else warning('Failed to upload', 'error')
+      })
+      .catch(err => console.error(err))
+  }
 
   // Handler: Uploading attachment
   const uploadAttachment = (file, param) => {
-    const formData = new FormData
-    formData.append(param.name, file),
+    const formData = new FormData()
+    formData.append(param.name, file)
     fetch('/upload/' + param.name, {
       method: 'POST',
       body: formData
     })
-    .then(response => response.json())
-    .then(data => {
-      let quoteId
-      let text
-      !data.error ? (
-        QuoteForm.hasClass('active') && (
-          quoteId = QuoteForm.find('.quoteId').text()
-        ),
-        (param.name === 'voice') ? (
-          write(data.file, undefined, quoteId)
-        ) : (
-          text = Message.val().replace(/(<([^>]+)>)/ig, '').trim(),
-          (text.length > 1500) && (
-            text = text.substr(0, 1500)
-          ),
-          write(text, data.file, quoteId, data.size)
-        )
-      ) : warning(data.error, 'error')
-    })
-    .catch(err => console.error(err))
-  };
+      .then(response => response.json())
+      .then(data => {
+        let quoteId
+        let text
+        if (!data.error) {
+          if (QuoteForm.hasClass('active')) {
+            quoteId = QuoteForm.find('.quoteId').text()
+          }
+          if (param.name === 'voice') {
+            write(data.file, undefined, quoteId)
+          } else {
+            text = Message.val().replace(/(<([^>]+)>)/ig, '').trim()
+            text.length > 1500 && (
+              text = text.substr(0, 1500)
+            )
+            write(text, data.file, quoteId, data.size)
+          }
+        } else warning(data.error, 'error')
+      })
+      .catch(err => console.error(err))
+  }
 
   // Handler: Close quote form
   const cancelQuote = () => {
-    QuoteForm.removeClass('active'),
+    QuoteForm.removeClass('active')
     $('.quote_form .message_user, .quote_form .message_text, .quote_form .quoteId').empty()
-  };
+  }
 
   // Handler: Play/Pause voice message
   const voicePlayPause = (index, initial = voiceIndex) => {
     const curSrc = voicePlayer.currentSrc.replace(/.+[\\/]/, '')
     const dataSrc = encodeURI($('.audio').eq(index).find('.control').data('src').replace(/.+[\\/]/, ''))
 
-    initial === index ? (
-      voicePlayer.paused ? (
-        curSrc === dataSrc ? (
+    if (initial === index) {
+      if (voicePlayer.paused) {
+        if (curSrc === dataSrc) {
           voicePlayer.play()
-        ) : (
-          voicePlayer.src = voiceList[index],
+        } else {
+          voicePlayer.src = voiceList[index]
           voicePlayer.play()
             .then(() => meta(
               $('.audio').eq(index).parents('.message_block_right').find('.message_user').text(),
               'voice'
             ))
-        )
-      ) : voicePlayer.pause()
-    ) : (
-      voicePlayer.src = voiceList[index],
+        }
+      } else voicePlayer.pause()
+    } else {
+      voicePlayer.src = voiceList[index]
       voicePlayer.play()
         .then(() => meta(
           $('.audio').eq(index).parents('.message_block_right').find('.message_user').text(),
           'voice'
         ))
-    )
-  };
+    }
+  }
 
   // Handler: Play next voice message
   const voiceNext = () => {
-    voiceIndex = (voiceIndex + 1)
-    if (voiceIndex > voiceList.length) {
+    voiceIndex = voiceIndex + 1
+    if (voiceIndex > voiceList.length - 1) {
       voicePlayer.pause()
       return
     }
-    voicePlayer.src = voiceList[voiceIndex],
+    voicePlayer.src = voiceList[voiceIndex]
     voicePlayer.play()
       .then(() => meta(
         $('.audio').eq(voiceIndex).parents('.message_block_right').find('.message_user').text(),
         'voice'
-      )),
+      ))
     $('.audio').not('playing').removeClass('playing')
-  };
-
+  }
 
   // Handler: Play/Pause music
   const musicPlayPause = (index, initial = musicIndex) => {
     const curSrc = musicPlayer.currentSrc.replace(/.+[\\/]/, '')
     const dataSrc = encodeURI($('.music').eq(index).find('.control').data('src').replace(/.+[\\/]/, ''))
 
-    initial === index ? (
-      musicPlayer.paused ? (
-        curSrc === dataSrc ? (
+    if (initial === index) {
+      if (musicPlayer.paused) {
+        if (curSrc === dataSrc) {
           musicPlayer.play()
-        ) : (
-          musicPlayer.src = musicList[index],
+        } else {
+          musicPlayer.src = musicList[index]
           musicPlayer.play()
             .then(() => meta(
               $('.music').eq(index).parents('.message_block_right').find('.message_user').text(),
               'music'
             ))
-        )
-      ) : musicPlayer.pause()
-    ) : (
-      musicPlayer.src = musicList[index],
+        }
+      } else musicPlayer.pause()
+    } else {
+      musicPlayer.src = musicList[index]
       musicPlayer.play()
         .then(() => meta(
           $('.music').eq(index).parents('.message_block_right').find('.message_user').text(),
           'music'
         ))
-    )
-  };
+    }
+  }
 
   // Handler: Play next music
   const musicNext = () => {
-    musicIndex = (musicIndex + 1)
-    if (musicIndex > musicList.length) {
+    musicIndex = musicIndex + 1
+    if (musicIndex > musicList.length - 1) {
       musicPlayer.pause()
       return
     }
-    musicPlayer.src = musicList[musicIndex],
+    musicPlayer.src = musicList[musicIndex]
     musicPlayer.play()
       .then(() => meta(
         $('.music').eq(musicIndex).parents('.message_block_right').find('.message_user').text(),
         'music'
-      )),
+      ))
     $('.music').not('playing').removeClass('playing')
-  };
+  }
 
   // Handler: Set browser media metadata
   const meta = (title, type) => {
     let cover
-    type === 'voice' ? (
+    if (type === 'voice') {
       cover = $('.audio').eq(voiceIndex).parents('.message_item').find('.message_avatar')
         .css('background-image').replace(/^url\(['"](.+)['"]\)/, '$1')
-    ) : (
+    } else {
       cover = $('.music').eq(musicIndex).parents('.message_item').find('.message_avatar')
         .css('background-image').replace(/^url\(['"](.+)['"]\)/, '$1')
-    )
-    cover === 'none' && (
+    }
+    (cover === 'none') && (
       cover = window.location.href + 'images/icon_192.png'
     )
     const text = type === 'voice' ? 'Voice message' : 'Music'
-    navigator.mediaSession.metadata = new MediaMetadata({
-      title,
-      artist: text,
-      artwork: [{ src: cover }]
-    })
-  };
+    if (navigator.mediaSession) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title,
+        artist: text,
+        artwork: [{ src: cover }]
+      })
+    }
+  }
 
   // Handler: Init waveform
   const initWave = (url) => {
@@ -601,7 +604,7 @@ $(document).ready(() => {
       normalize: true,
       pixelRatio: 2
     }).load(url)
-  };
+  }
 
   // Handler: Push browser notification
   const sendNotification = (data, callback) => {
@@ -632,49 +635,52 @@ $(document).ready(() => {
         })
       } else send()
     }
-  };
+  }
 
   // Handler: Recording voice message
   const workerOptions = {
     OggOpusEncoderWasmPath: window.location.href + 'js/OpusMediaRecorder/OggOpusEncoder.wasm'
-  };
+  }
 
-  window.MediaRecorder = OpusMediaRecorder;
+  window.MediaRecorder = OpusMediaRecorder
 
   const recordAudio = () => new Promise(async (resolve, reject) => {
-    if (navigator.mediaDevices === undefined) return reject('Error get usermedia: undefined')
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/ogg' }, workerOptions)
-    let audioChunks = []
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/ogg' }, workerOptions)
+      let audioChunks = []
 
-    mediaRecorder.addEventListener('dataavailable', (e) => {
-      audioChunks.push(e.data)
-    })
-
-    const start = () => {
-      audioChunks = []
-      mediaRecorder.start()
-    }
-
-    const stop = () => new Promise(resolve => {
-      mediaRecorder.addEventListener('stop', () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/ogg' })
-        resolve({ audioBlob })
+      mediaRecorder.addEventListener('dataavailable', (e) => {
+        audioChunks.push(e.data)
       })
-      mediaRecorder.stop()
-    })
 
-    const cancel = () => {
-      mediaRecorder.stop()
-      audioChunks = []
+      const start = () => {
+        audioChunks = []
+        mediaRecorder.start()
+      }
+
+      const stop = () => new Promise(resolve => {
+        mediaRecorder.addEventListener('stop', () => {
+          const audioBlob = new Blob(audioChunks, { type: 'audio/ogg' })
+          resolve({ audioBlob })
+        })
+        mediaRecorder.stop()
+      })
+
+      const cancel = () => {
+        mediaRecorder.stop()
+        audioChunks = []
+      }
+
+      resolve({ start, stop, cancel })
+    } catch (e) {
+      reject('Error get usermedia')
     }
-
-    resolve({ start, stop, cancel })
-  });
+  })
 
   // Handler: Recording timer
-  let seconds = 0;
-  let recHandler;
+  let seconds = 0
+  let recHandler
   const setRecTime = () => {
     seconds = 0
     RecordingTime.text(toHHMMSS(0))
@@ -682,27 +688,27 @@ $(document).ready(() => {
       seconds += 1
       RecordingTime.text(toHHMMSS(seconds))
     }, 1000)
-  };
+  }
 
   // UI: Uploading voice message
-  let recorder;
+  let recorder
   VoiceInput.on('click', async () => {
     RecordingBar.removeClass('none')
     try {
       if (!recorder) recorder = await recordAudio()
-      recorder.start(),
-      socket.emit('recording', { username: USER }),
+      recorder.start()
+      socket.emit('recording', { username: USER })
       setRecTime()
     } catch (e) {
-      console.error(e),
-      RecordingBar.addClass('none'),
-      socket.emit('stop_typing', { username: USER }),
+      console.error(e)
+      RecordingBar.addClass('none')
+      socket.emit('stop_typing', { username: USER })
       warning('Unable to access microphone', 'error')
     }
-  }),
+  })
   CancelRec.on('click', async () => {
-    RecordingBar.addClass('none'),
-    socket.emit('stop_typing', { username: USER }),
+    RecordingBar.addClass('none')
+    socket.emit('stop_typing', { username: USER })
     clearInterval(recHandler)
     try {
       if (!recorder) recorder = await recordAudio()
@@ -710,10 +716,10 @@ $(document).ready(() => {
     } catch (e) {
       console.error(e)
     }
-  }),
+  })
   SendRec.on('click', async () => {
-    RecordingBar.addClass('none'),
-    socket.emit('stop_typing', { username: USER }),
+    RecordingBar.addClass('none')
+    socket.emit('stop_typing', { username: USER })
     clearInterval(recHandler)
     try {
       if (!recorder) recorder = await recordAudio()
@@ -723,316 +729,321 @@ $(document).ready(() => {
     } catch (e) {
       console.error(e)
     }
-  }),
+  })
 
   // UI: Play/Pause voice message
-  $(document).on('click', '.audio-btn', function() {
+  $(document).on('click', '.audio-btn', function () {
     musicPlayer.pause()
     const initial = voiceIndex
-    voiceIndex = $('.audio-btn').index(this),
+    voiceIndex = $('.audio-btn').index(this)
     voicePlayPause(voiceIndex, initial)
-  }),
+  })
 
-  voicePlayer.onended = () => voiceNext(),
+  voicePlayer.onended = () => voiceNext()
 
   voicePlayer.addEventListener('pause', () => {
     $('.audio').removeClass('playing')
-  }),
+  })
 
   voicePlayer.addEventListener('play', () => {
-    $('.audio').removeClass('playing'),
+    $('.audio').removeClass('playing')
     $('.audio').eq(voiceIndex).addClass('playing')
-  }),
+  })
 
   voicePlayer.addEventListener('timeupdate', () => {
     const curTime = voicePlayer.currentTime
     const duration = voicePlayer.duration
-    $('.playing .duration').text(toHHMMSS(curTime)),
+    $('.playing .duration').text(toHHMMSS(curTime))
     $('.playing').find('wave').eq(1).css('width', `${(curTime + 0.25) / duration * 100}%`)
-  }),
+  })
 
   // UI: Seeking on voice bar
-  $(document).on('click', '.playing wave', function(e) {
+  $(document).on('click', '.playing wave', function (e) {
     const offset = e.pageX - $(this).offset().left
     const duration = voicePlayer.duration
     const width = $(this).width()
     duration && (
       voicePlayer.currentTime = (offset / width) * duration
     )
-  }),
-
+  })
 
   // UI: Play/Pause music
-  $(document).on('click', '.music-btn', function() {
+  $(document).on('click', '.music-btn', function () {
     voicePlayer.pause()
     const initial = musicIndex
-    musicIndex = $('.music-btn').index(this),
+    musicIndex = $('.music-btn').index(this)
     musicPlayPause(musicIndex, initial)
-  }),
+  })
 
-  musicPlayer.onended = () => musicNext(),
+  musicPlayer.onended = () => musicNext()
 
   musicPlayer.addEventListener('pause', () => {
     $('.music').removeClass('playing')
-  }),
+  })
 
   musicPlayer.addEventListener('play', () => {
-    $('.music').removeClass('playing'),
+    $('.music').removeClass('playing')
     $('.music').eq(musicIndex).addClass('playing')
-  }),
+  })
 
   musicPlayer.addEventListener('timeupdate', () => {
     const curTime = musicPlayer.currentTime
     const duration = musicPlayer.duration
-    $('.playing .duration').text(toHHMMSS(curTime)),
+    $('.playing .duration').text(toHHMMSS(curTime))
     $('.playing .progress').stop(true, true).animate({
-      'width': `${(curTime + .25) / duration * 100}%`
+      width: `${(curTime + 0.25) / duration * 100}%`
     }, 200, 'linear')
-  }),
+  })
 
   // UI: Seeking on music bar
-  $(document).on('click', '.playing .bar', function(e) {
+  $(document).on('click', '.playing .bar', function (e) {
     const offset = e.pageX - $(this).offset().left
     const duration = musicPlayer.duration
     const width = $(this).width()
     duration && (
       musicPlayer.currentTime = (offset / width) * duration
     )
-  }),
+  })
 
   // UI: Uploading user avatar
   AvatarInput.on('change', (e) => {
     e.target.files[0].size > 0 ? uploadAvatar(e.target.files[0]) : warning('Empty file', 'error')
-  }),
+  })
 
   // UI: Uploading message image
   ImageInput.on('change', (e) => {
     e.target.files[0].size > 0 ? uploadAttachment(e.target.files[0], { name: 'image' }) : warning('Empty file', 'error')
-  }),
+  })
 
   // UI: Uploading message file
   FileInput.on('change', (e) => {
     e.target.files[0].size > 0 ? uploadAttachment(e.target.files[0], { name: 'file' }) : warning('Empty file', 'error')
-  }),
+  })
 
   // UI: Check username in localstorage
-  USER && (
-    socket.emit('set_username', { username: USER }),
-    Username.remove(),
-    Attachment.removeClass('none'),
-    NotifSetting.removeClass('none'),
-    Online.removeClass('none'),
+  if (USER) {
+    socket.emit('set_username', { username: USER })
+    Username.remove()
+    Attachment.removeClass('none')
+    NotifSetting.removeClass('none')
+    Online.removeClass('none')
     MessageForm.prepend(
       template.avatar(USER)
     )
-  ),
+  }
 
   // UI: Check photo in localstorage
-  localStorage.getItem('userphoto') && (
+  if (localStorage.getItem('userphoto')) {
     socket.emit('set_userphoto', {
       image: localStorage.getItem('userphoto')
-    }),
+    })
     $('.user').empty().css('background-image', `url('./users/images/${localStorage.getItem('userphoto')}')`)
-  ),
+  }
 
   // UI: Check notification settings in localstorage
-  (localStorage.getItem('notifications') === 'disable') && (
+  localStorage.getItem('notifications') === 'disable' && (
     NotifSetting.removeClass('on').addClass('off')
-  ),
+  )
 
   // UI: Toggle notification icon and setting in localstorage
   NotifSetting.on('click', () => {
     warning('Successfully saved', 'success')
     if (localStorage.getItem('notifications') !== 'disable') {
-      localStorage.setItem('notifications', 'disable'),
+      localStorage.setItem('notifications', 'disable')
       NotifSetting.removeClass('on').addClass('off')
     } else {
-      localStorage.setItem('notifications', 'enable'),
+      localStorage.setItem('notifications', 'enable')
       NotifSetting.removeClass('off').addClass('on')
     }
-  }),
+  })
 
   // UI: Send message via button
   SendMessage.on('click', () => {
     let text = Message.val().replace(/(<([^>]+)>)/ig, '').trim()
     if (text.length > 1) {
-      (text.length > 1500) && (
+      if (text.length > 1500) {
         text = text.substr(0, 1500)
-      )
+      }
       const value = text.split(' ')
       const quoteActive = QuoteForm.hasClass('active')
       let content
       let quoteId
       quoteActive && (
         quoteId = QuoteForm.find('.quoteId').text()
-      ),
-      (checkImg(text) || checkVideo(text)) ? (
-        content = extractLink(text),
+      )
+      if (checkImg(text) || checkVideo(text)) {
+        content = extractLink(text)
         text = cutLink(text)
-      ) : (
+      } else {
         content = undefined
-      ),
+      }
       (value[0] === '/clear') ? clear(value[1]) : write(text, content, quoteId)
     } else warning('Enter message text', 'error')
-  }),
+  })
 
   // UI: Send message via ENTER key
   $(document).on('keyup', '#nameInput, #textInput', (e) => {
     let text = Message.val().replace(/(<([^>]+)>)/ig, '').trim()
     if (text.length > 1 && e.which === 13) {
-      (text.length > 1500) && (
+      if (text.length > 1500) {
         text = text.substr(0, 1500)
-      )
+      }
       const value = text.split(' ')
       const quoteActive = QuoteForm.hasClass('active')
       let content
       let quoteId
       quoteActive && (
         quoteId = QuoteForm.find('.quoteId').text()
-      ),
-      (checkImg(text) || checkVideo(text)) ? (
-        content = extractLink(text),
+      )
+      if (checkImg(text) || checkVideo(text)) {
+        content = extractLink(text)
         text = cutLink(text)
-      ) : (
+      } else {
         content = undefined
-      ),
+      }
       (value[0] === '/clear') ? clear(value[1]) : write(text, content, quoteId)
     }
-  }),
+  })
 
   // UI: Toggle visible sending button
   Message.on('keyup', () => {
-    (Message.val().trim().length > 1 && !!USER) && (
-      MessageForm.addClass('typed'),
+    if (Message.val().trim().length > 1 && !!USER) {
+      MessageForm.addClass('typed')
       Attachment.addClass('none')
-    ),
-    (Message.val().trim().length < 2 && !!USER) && (
-      MessageForm.removeClass('typed'),
+    }
+    if (Message.val().trim().length < 2 && !!USER) {
+      MessageForm.removeClass('typed')
       Attachment.removeClass('none')
-    )
-  }),
+    }
+  })
 
   // UI: Paste username to input
-  $(document).on('click', '.answer', function() {
+  $(document).on('click', '.answer', function () {
     Message.val('@' + $(this).data('user') + ' ').focus()
-  }),
+  })
 
   // UI: Itit quote form
-  $(document).on('click', '.quote_btn', function() {
+  $(document).on('click', '.quote_btn', function () {
     const media = $(this).parent().find('.message_block_right').hasClass('media')
     const video = $(this).parent().find('.video').attr('src')
     const audio = $(this).parent().find('.control').data('src')
     const file = $(this).parent().find('.file-icon').data('src')
-    QuoteForm.addClass('active'),
-    media ? (
-      $('.quote_form .message_user').addClass('none'),
+    QuoteForm.addClass('active')
+    if (media) {
+      $('.quote_form .message_user').addClass('none')
       $('.quote_form .message_text').addClass('media')
-    ) : (
-      $('.quote_form .message_user').removeClass('none'),
+    } else {
+      $('.quote_form .message_user').removeClass('none')
       $('.quote_form .message_text').removeClass('media')
-    ),
-    $('.quote_form .message_user').text($(this).parent().data('user')),
-    $('.quote_form .quoteId').text($(this).parent().data('id')),
-    (video && checkVideo(video)) ? (
-      $('.quote_form .message_user').removeClass('none'),
+    }
+    $('.quote_form .message_user').text($(this).parent().data('user'))
+    $('.quote_form .quoteId').text($(this).parent().data('id'))
+    if (video && checkVideo(video)) {
+      $('.quote_form .message_user').removeClass('none')
       $('.quote_form .message_text').removeClass('media').empty().text('Video')
-    ) : (audio && checkVoice(audio) || checkAudio(audio)) ? (
-      $('.quote_form .message_user').removeClass('none'),
-      $('.quote_form .message_text').removeClass('media').empty().text('Audio')
-    ) : (file && checkFile(file)) ? (
-      $('.quote_form .message_user').removeClass('none'),
+    } else if (audio) {
+      if (checkVoice(audio) || checkAudio(audio)) {
+        $('.quote_form .message_user').removeClass('none')
+        $('.quote_form .message_text').removeClass('media').empty().text('Audio')
+      }
+    } else if (file && checkFile(file)) {
+      $('.quote_form .message_user').removeClass('none')
       $('.quote_form .message_text').removeClass('media').empty().text('File')
-    ) : $('.quote_form .message_text').html($(this).parent().find('.message_text').html().trim()),
+    } else $('.quote_form .message_text').html($(this).parent().find('.message_text').html().trim())
     Message.focus()
-  }),
+  })
 
   // UI: Close quote form
-  CancelQuote.on('click', cancelQuote),
+  CancelQuote.on('click', cancelQuote)
 
-  // UI: Toggle visible attach chooser 
+  // UI: Toggle visible attach chooser
   AttachBtn.on('click', () => {
     AttachBar.toggleClass('none')
-  }),
+  })
 
   $(document).on('click', (e) => {
-    const $target = $(e.target)
-    if (!AttachBar.hasClass('none') && $target.closest('.attach_icon').length === 0) {
+    if (!AttachBar.hasClass('none') && $(e.target).closest('.attach_icon').length === 0) {
       AttachBar.addClass('none')
     }
-  }),
+  })
 
   // UI: Output old messages from DB
   socket.on('output', (data) => {
-    (data.length > 0) ? (
-      (data.length < limit) && socket.emit('get_more', { offset: offset += limit }),
-      $('.empty-results').remove(),
-      (document.querySelector('#chat').children.length === 0) && (
-        $.each(data, (i) => {
-          const type = checkImg(data[i].content) || checkVideo(data[i].content) ? 'media' : null
-          const my = data[i].username === USER
-          Chat.prepend(
-            template.message({
-              id: data[i]._id,
-              user: data[i].username,
-              photo: data[i].userphoto,
-              message: data[i].message,
-              content: data[i].content,
-              time: data[i].time,
-              quote: data[i].quote,
-              fileInfo: data[i].fileInfo,
-              type,
-              my
-            })
-          ),
-          checkUrl(data[i].message) && (type !== 'media') && linkPreview({
+    if (data.length > 0) {
+      (data.length < limit) && socket.emit('get_more', { offset: offset += limit })
+      $('.empty-results').remove()
+      $.each(data, (i) => {
+        const type = (checkImg(data[i].content) || checkVideo(data[i].content)) ? 'media' : null
+        const my = data[i].username === USER
+        Chat.prepend(
+          template.message({
+            id: data[i]._id,
+            user: data[i].username,
+            photo: data[i].userphoto,
+            message: data[i].message,
+            content: data[i].content,
+            time: data[i].time,
+            quote: data[i].quote,
+            fileInfo: data[i].fileInfo,
+            type,
+            my
+          })
+        )
+        data[i].quote && quoteInit(data[i])
+        if (checkUrl(data[i].message) && (type !== 'media')) {
+          linkPreview({
             url: data[i].message.match(/(https?:\/\/[^\s]+)/g)[0],
             id: data[i]._id
-          }),
-          data[i].quote && quoteInit(data[i]),
-          checkVoice(data[i].message) && (
-            voiceList.push(data[i].message),
-            initWave(data[i].message)
-          ),
-          checkAudio(data[i].content) && (
-            musicList.push(data[i].content)
-          )
-        }),
-        voiceList.sort(),
-        musicList.sort()
-      ),
+          })
+        }
+        if (checkVoice(data[i].message)) {
+          voiceList.push(data[i].message)
+          initWave(data[i].message)
+        }
+        if (checkAudio(data[i].content)) {
+          musicList.push(data[i].content)
+        }
+      })
+      voiceList.sort()
+      musicList.sort()
       $('html, body').animate({ scrollTop: $(document).height() }, 0)
-    ) : Chat.html(template.error('No messages yet'))
-  }),
-
+    } else Chat.html(template.error('No messages yet'))
+  })
 
   // UI: Adding new message
   socket.on('new_message', (data) => {
-    const type = checkImg(data.content) || checkVideo(data.content) ? 'media' : null;
+    const type = (checkImg(data.content) || checkVideo(data.content)) ? 'media' : null
     const my = data.username === USER
-    const sound = new Audio('./sounds/new_in.wav')
-    const icon = data.userphoto ? window.location.href + 'img/users/' + data.userphoto : null
-    const message = checkImg(data.content) ? 'Image' : checkVideo(data.content) ? 'Video' : data.message
-    const image = checkImg(data.content) ? data.content : null;
-    (document.body.scrollHeight - (window.scrollY + window.innerHeight) < 150) && (
+    const icon = data.userphoto ? window.location.href + 'users/images/' + data.userphoto : null
+    const message =
+      (checkVoice(data.message) || checkAudio(data.content)) ? 'Audio'
+        : checkVideo(data.content) ? 'Video'
+          : checkFile(data.content) ? 'File'
+            : checkImg(data.content) ? 'Image'
+              : data.message
+    const image = (checkImg(data.content) || checkImg(data.message)) ? data.content : null
+    if (document.body.scrollHeight - (window.scrollY + window.innerHeight) < 150) {
       $('html, body').animate({ scrollTop: $(document).height() }, 100)
-    ),
-    my ? $('html, body').animate({ scrollTop: $(document).height() }, 100) : (
-      sound.play(),
-      (checkAnswer(data.message, USER) && localStorage.getItem('notifications') !== 'disable') && (
+    }
+    if (my) {
+      $('html, body').animate({ scrollTop: $(document).height() }, 100)
+    } else {
+      sound.play()
+      if (checkAnswer(data.message, USER) && localStorage.getItem('notifications') !== 'disable') {
         sendNotification({
           title: data.username,
           message,
           icon,
           image
         }, () => {
-          $(`.message_item[data-id="${data._id}"]`).addClass('choosenhover'),
+          $(`.message_item[data-id="${data._id}"]`).addClass('choosenhover')
           setTimeout(() => {
             $(`.message_item[data-id="${data._id}"]`).removeClass('choosenhover')
           }, 5000)
         })
-      )
-    ),
-    $('.empty-results').remove(),
+      }
+    }
+    $('.empty-results').remove()
     Chat.append(
       template.message({
         id: data._id,
@@ -1046,36 +1057,37 @@ $(document).ready(() => {
         type,
         my
       })
-    ),
-    checkUrl(data.message) && (type !== 'media') && linkPreview({
-      url: data.message.match(/(https?:\/\/[^\s]+)/g)[0],
-      id: data._id
-    }),
-    data.quote && quoteInit(data),
-    checkVoice(data.message) && (
-      voiceList.push(data.message),
-      voiceList.sort(),
-      initWave(data.message)
-    ),
-    checkAudio(data.content) && (
-      musicList.push(data.content),
-      musicList.sort()
     )
-  }),
-
+    data.quote && quoteInit(data)
+    if (checkUrl(data.message) && (type !== 'media')) {
+      linkPreview({
+        url: data.message.match(/(https?:\/\/[^\s]+)/g)[0],
+        id: data._id
+      })
+    }
+    if (checkVoice(data.message)) {
+      voiceList.push(data.message)
+      voiceList.sort()
+      initWave(data.message)
+    }
+    if (checkAudio(data.content)) {
+      musicList.push(data.content)
+      musicList.sort()
+    }
+  })
 
   // UI: Load more old messages from DB
   socket.on('more', (data) => {
     let position = 0
-    let initH = 0;
-    (data.length > 0) ? (
-      $('.empty-results').remove(),
-      (document.querySelector('#chat').children.length !== 0) && (
+    let initH = 0
+    if (data.length > 0) {
+      $('.empty-results').remove()
+      if (Chat.children().length !== 0) {
         $.each(data, (i) => {
-          const type = checkImg(data[i].content) || checkVideo(data[i].content) ? 'media' : null
+          const type = (checkImg(data[i].content) || checkVideo(data[i].content)) ? 'media' : null
           const my = data[i].username === USER
-          initH = $('.message_item').outerHeight(true),
-          position += initH,
+          initH = $('.message_item').outerHeight(true)
+          position += initH
           Chat.prepend(
             template.message({
               id: data[i]._id,
@@ -1089,35 +1101,36 @@ $(document).ready(() => {
               type,
               my
             })
-          ),
-          checkUrl(data[i].message) && (type !== 'media') && linkPreview({
-            url: data[i].message.match(/(https?:\/\/[^\s]+)/g)[0],
-            id: data[i]._id
-          }),
-          data[i].quote && quoteInit(data[i]),
-          checkVoice(data[i].message) && (
-            voiceList.push(data[i].message),
-            initWave(data[i].message)
-          ),
-          checkAudio(data[i].content) && (
-            musicList.push(data[i].content)
           )
-        }),
-        window.scrollTo(0, position),
-        voiceList.sort(),
+          data[i].quote && quoteInit(data[i])
+          if (checkUrl(data[i].message) && (type !== 'media')) {
+            linkPreview({
+              url: data[i].message.match(/(https?:\/\/[^\s]+)/g)[0],
+              id: data[i]._id
+            })
+          }
+          if (checkVoice(data[i].message)) {
+            voiceList.push(data[i].message)
+            initWave(data[i].message)
+          }
+          if (checkAudio(data[i].content)) {
+            musicList.push(data[i].content)
+          }
+        })
+        window.scrollTo(0, position)
+        voiceList.sort()
         musicList.sort()
-      )
-    ) : end = true
-  }),
+      }
+    } else end = true
+  })
 
   $(window).scroll(() => {
-    !end && (
+    if (!end) {
       ($(window).scrollTop() === 0) && (
         socket.emit('get_more', { offset: offset += limit })
       )
-    )
-  }),
-
+    }
+  })
 
   Message.on('keyup', () => {
     if (Message.val().length === 0 && !USER) return
@@ -1125,78 +1138,71 @@ $(document).ready(() => {
     (Message.val().length > 1)
       ? socket.emit('typing', { username: USER })
       : socket.emit('stop_typing', { username: USER })
-  }),
-
+  })
 
   socket.on('typing', (data) => {
     typings = data.typings
     if (typings.length < 1) return
 
     const items = typings.filter(item => item !== USER)
-    let typers;
-    (typings.length < 3)
-      ? (
-        (typings.length > 1)
-          ? typers = items.join(', ') + ' are typing...'
-          : typers = items.join(', ') + ' is typing...'
-      )
-      : typers = 'Several people are typing...',
+    let typers
+    if (typings.length < 3) {
+      (typings.length > 1)
+        ? typers = items.join(', ') + ' are typing...'
+        : typers = items.join(', ') + ' is typing...'
+    } else typers = 'Several people are typing...'
     Status.addClass('typing').text(typers)
-  }),
-
+  })
 
   socket.on('recording', (data) => {
     Status.addClass('typing').text(`${data.username} is recording audio...`)
-  }),
-
+  })
 
   Message.focusout(() => {
     if (Message.val().length < 2) return
 
     socket.emit('stop_typing', { username: USER })
-  }),
-
+  })
 
   socket.on('stop_typing', (data) => {
     typings = data.typings
     Status.removeClass('typing').empty()
-  }),
-
+  })
 
   socket.on('online', (data) => {
     OnlineCount.text(counter(data.online.length) || 0)
-  }),
+  })
 
-
-  $(document).on('click', '.del', function() {
+  $(document).on('click', '.del', function () {
+    USER && (
+      socket.emit('set_username', { username: USER })
+    )
     socket.emit('delete', {
       username: $(this).parent().data('user'),
       id: $(this).parent().data('id'),
       file: $(this).parent().find('.message_text .deleteble').data('url')
     })
-  }),
+  })
   socket.on('delete', (data) => {
     const self = $(`.message_item[data-id="${data.id}"]`)
     if (self.find('.audio').length === 1) {
       const i = voiceList.indexOf(self.find('.control').data('src'))
-      i > -1 && voiceList.splice(i, 1),
-      (voicePlayer.currentSrc.substring(voicePlayer.currentSrc.lastIndexOf('/') + 1) === self.find('.control').data('url')) && voiceNext()
+      i > -1 && voiceList.splice(i, 1)
+      voicePlayer.currentSrc.substring(voicePlayer.currentSrc.lastIndexOf('/') + 1 === self.find('.control').data('url')) && voiceNext()
     }
     if (self.find('.music').length === 1) {
       const i = musicList.indexOf(self.find('.control').data('src'))
-      i > -1 && musicList.splice(i, 1),
-      (musicPlayer.currentSrc.substring(musicPlayer.currentSrc.lastIndexOf('/') + 1) === self.find('.control').data('url')) && musicNext()
+      i > -1 && musicList.splice(i, 1)
+      musicPlayer.currentSrc.substring(musicPlayer.currentSrc.lastIndexOf('/') + 1 === self.find('.control').data('url')) && musicNext()
     }
 
     self.remove()
-  }),
-
+  })
 
   socket.on('cleared', () => {
-    Status.removeClass('typing').empty(),
+    Status.removeClass('typing').empty()
     Chat.empty().html(template.error('No messages yet'))
-  }),
-
+  })
 
   socket.on('alert', (data) => warning(data.message, data.type))
-});
+})

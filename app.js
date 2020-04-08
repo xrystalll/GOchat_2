@@ -96,6 +96,8 @@ app.get('/', (req, res) => {
 
 app.post('/upload/avatar', (req, res) => {
   uploadAvatar(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err })
+
     req.file ? (
       sharp(req.file.path)
         .resize(300, 300)
@@ -111,6 +113,8 @@ app.post('/upload/avatar', (req, res) => {
 
 app.post('/upload/image', (req, res) => {
   uploadImage(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err })
+
     req.file
       ? res.json({ file: './attachments/images/' + req.file.filename })
       : res.status(400).json({ error: err })
@@ -119,6 +123,8 @@ app.post('/upload/image', (req, res) => {
 
 app.post('/upload/voice', (req, res) => {
   uploadVoice(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err })
+
     req.file
       ? res.json({ file: './attachments/voice/' + req.file.filename })
       : res.status(400).json({ error: err })
@@ -127,6 +133,8 @@ app.post('/upload/voice', (req, res) => {
 
 app.post('/upload/file', (req, res) => {
   uploadFile(req, res, (err) => {
+    if (err) return res.status(400).json({ error: err })
+
     const stats = fs.statSync(req.file.path)
     const fileSizeInBytes = stats['size']
     req.file
@@ -185,7 +193,7 @@ io.on('connection', (socket) => {
 
   socket.on('set_username', (data) => {
     socket.username = xss(data.username)
-    online.push(xss(data.username))
+    if (data.username && online.indexOf(data.username) === -1) online.push(xss(data.username))
     io.emit('online', { online })
   })
 
