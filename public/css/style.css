@@ -303,6 +303,9 @@ header {
   bottom: -5px;
   right: 33px;
 }
+.image_or_file.hovered {
+  box-shadow: rgba(0, 0, 0, .15) 0 0 3px 1px;
+}
 .attach {
   display: flex;
   flex-direction: column;

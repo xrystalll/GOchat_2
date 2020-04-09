@@ -24,6 +24,7 @@ $(document).ready(() => {
   const NotifSetting = $('.notif_setting')
   const Online = $('.online')
   const OnlineCount = $('.online_count')
+  const thisLocation = window.location.href
   const limit = 10
   let offset = 0
   let end = false
@@ -578,7 +579,7 @@ $(document).ready(() => {
         .css('background-image').replace(/^url\(['"](.+)['"]\)/, '$1')
     }
     (cover === 'none') && (
-      cover = window.location.href + 'images/icon_192.png'
+      cover = thisLocation + 'images/icon_192.png'
     )
     const text = type === 'voice' ? 'Voice message' : 'Music'
     if (navigator.mediaSession) {
@@ -611,7 +612,7 @@ $(document).ready(() => {
     if (data === undefined || !data.message) return false
     const title = (data.title === null) ? 'Notification' : data.title
     const message = (data.message === null) ? 'Empty message' : data.message
-    const icon = (data.icon === null) ? window.location.href + 'images/icon_192.png' : data.icon
+    const icon = (data.icon === null) ? thisLocation + 'images/icon_192.png' : data.icon
     const image = (data.image === null) ? undefined : data.image
     const send = () => {
       const notification = new Notification(title, {
@@ -639,7 +640,7 @@ $(document).ready(() => {
 
   // Handler: Recording voice message
   const workerOptions = {
-    OggOpusEncoderWasmPath: window.location.href + 'js/OpusMediaRecorder/OggOpusEncoder.wasm'
+    OggOpusEncoderWasmPath: thisLocation + 'js/OpusMediaRecorder/OggOpusEncoder.wasm'
   }
 
   window.MediaRecorder = OpusMediaRecorder
@@ -925,7 +926,7 @@ $(document).ready(() => {
   // UI: Itit quote form
   $(document).on('click', '.quote_btn', function () {
     const media = $(this).parent().find('.message_block_right').hasClass('media')
-    const video = $(this).parent().find('.video').attr('src')
+    const video = $(this).parent().find('.video').prop('src')
     const audio = $(this).parent().find('.control').data('src')
     const file = $(this).parent().find('.file-icon').data('src')
     QuoteForm.addClass('active')
@@ -959,11 +960,14 @@ $(document).ready(() => {
   // UI: Toggle visible attach chooser
   AttachBtn.on('click', () => {
     AttachBar.toggleClass('none')
+    if (QuoteForm.hasClass('active')) {
+      AttachBar.toggleClass('hovered')
+    }
   })
 
   $(document).on('click', (e) => {
     if (!AttachBar.hasClass('none') && $(e.target).closest('.attach_icon').length === 0) {
-      AttachBar.addClass('none')
+      AttachBar.addClass('none').removeClass('hovered')
     }
   })
 
@@ -1014,7 +1018,7 @@ $(document).ready(() => {
   socket.on('new_message', (data) => {
     const type = (checkImg(data.content) || checkVideo(data.content)) ? 'media' : null
     const my = data.username === USER
-    const icon = data.userphoto ? window.location.href + 'users/images/' + data.userphoto : null
+    const icon = data.userphoto ? thisLocation + 'users/images/' + data.userphoto : null
     const message =
       (checkVoice(data.message) || checkAudio(data.content)) ? 'Audio'
         : checkVideo(data.content) ? 'Video'
@@ -1171,6 +1175,7 @@ $(document).ready(() => {
 
   socket.on('online', (data) => {
     OnlineCount.text(counter(data.online.length) || 0)
+    Online.prop('title', 'Users: ' + data.online.join(', '))
   })
 
   $(document).on('click', '.del', function () {
