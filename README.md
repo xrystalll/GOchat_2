@@ -35,11 +35,11 @@ create cluster on https://mongodb.com and change url on config file
 (if you don't want to use the mongoDB cloud database then you need to install it on your computer or server. More information at https://mongodb.com)
 
 ## Run
-`npm start` via nodemon
+`npm run dev` via nodemon
 
 or
 
-`node app`
+`npm start`
 
 and open in browser https://localhost:3000
 
