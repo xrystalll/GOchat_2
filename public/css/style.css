@@ -20,6 +20,7 @@
   --default-transparent-04: rgba(0, 0, 0, .4);
   --default-transparent-06: rgba(0, 0, 0, .6);
   --transparent-danger-color: rgba(229, 57, 53, .5);
+  --secondary-transparent-04: rgba(173, 173, 184, .4);
 }
 * {
   outline: none;
@@ -58,7 +59,7 @@ i, img {
 
 ::-webkit-scrollbar-thumb {
   border-radius: 50px;
-  box-shadow: inset 0 0 10px 10px var(--secondary-color);
+  box-shadow: inset 0 0 10px 10px var(--secondary-transparent-04);
   border: solid 4px var(--default-transparent);
 }
 
@@ -252,7 +253,7 @@ header {
   font-size: 15.2px;
 }
 #textInput {
-  padding: 0 40px 0 16px;
+  padding: 0 16px;
 }
 .typed #textInput {
   margin: 0 8px;
@@ -766,6 +767,7 @@ header {
 wave {
   overflow: hidden !important;
   cursor: pointer;
+  z-index: 2 !important;
 }
 .audio-time {
   margin-left: 8px;
